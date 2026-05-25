@@ -1,0 +1,62 @@
+# Copy this file to terraform.tfvars and fill in your actual values
+# terraform.tfvars is gitignored for security
+
+# REQUIRED: Your Azure subscription ID
+subscription_id = "your-subscription-id-here"
+
+# Optional: Project name for resource naming (default: "lando")
+# project_name = "myproject"
+
+# Optional: Azure region (default: "centralus")
+# location = "westus2"
+
+# REQUIRED: Home Assistant token from your HA instance
+home_assistant_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+
+# REQUIRED: Home Assistant certificate - base64 encoded, NO PEM headers/footers
+# Extract with: cat cert.pem | sed '/-----/d' | tr -d '\n'
+home_assistant_certificate = "MIIDazCCAlOgAwIBAgIUI..."
+
+# Optional: Tailscale API key (for future use)
+# tailscale_auth_key = ""
+
+# Optional: Home Assistant base URL (required for the function to work)
+# home_assistant_base_url = "https://your-ha-domain:port"
+
+# Optional: App Service Plan SKU (default: "B1")
+# Options: "B1" (always-on), "FC1" (flex consumption), "Y1" (deprecated consumption)
+# app_service_plan_sku = "B1"
+
+# Optional: Docker image tag for Function App (default: "0.1.0")
+# Specify which Docker image version to deploy from Azure Container Registry
+# function_app_image_tag = "0.1.2"
+
+# Optional: Custom resource names (auto-generated if not specified)
+# resource_group_name = "rg-myproject-westus2"
+# storage_account_name = "stmyprojectwestus2"
+# key_vault_name = "kv-myproject-westus2"
+# app_service_plan_name = "asp-myproject-westus2"
+# function_app_name = "func-myproject-westus2"
+# app_insights_name = "myproject-insights"
+
+# =========================================================================
+# AWS / Alexa Lambda proxy
+# =========================================================================
+
+# REQUIRED: Alexa Smart Home skill ID — used to lock the Lambda permission to
+# *this* skill. Format: amzn1.ask.skill.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+alexa_smart_home_skill_id = "amzn1.ask.skill.9193d4d3-b254-44ed-aba3-68bdef4ea251"
+
+# Optional overrides (defaults are usually correct):
+# aws_region                      = "us-east-1"
+# alexa_lambda_log_retention_days = 30
+# alexa_lambda_memory_mb          = 256
+# alexa_lambda_timeout_seconds    = 15
+# hmac_max_clock_skew_seconds     = 300
+#
+# AWS resource names are built from var.project_name (default "lando"):
+#   Lambda  → lambda-lando-alexa-proxy
+#   Role    → role-lando-alexa-proxy
+#   Policy  → policy-lando-hmac-secret-read
+#   Secret  → lando/hmac/shared-secret
+# Change them by setting project_name above (affects Azure names too).

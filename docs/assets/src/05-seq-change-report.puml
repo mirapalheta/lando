@@ -1,0 +1,62 @@
+@startuml 05-seq-change-report
+title Sequence — Proactive Alexa.ChangeReport
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 8
+skinparam BoxPadding 12
+skinparam ParticipantBackgroundColor #F6F6F6
+skinparam ParticipantBorderColor #888888
+
+participant "Home Assistant" as ha
+box "Azure Function App" #F0F6FB
+  participant "HomeAssistant\nWebSocketClient" as ws
+  participant "ChangeReportService\n(IHostedService)" as crs
+  participant "EntityTransform\n(IEntityTransform<ContextProperty[]>)" as et
+  participant "TokenStore\n(per-grantee refresh)" as ts
+  participant "LwaTokenClient" as lwa
+  participant "EventGatewayClient" as egc
+end box
+participant "Alexa Event Gateway" as gw
+
+== startup ==
+crs -> ws : subscribe "state_changed"
+ws -> ha : WS auth + subscribe
+ha --> ws : subscription ok
+
+== steady state ==
+ha -> ws : state_changed event\n(entity_id, new_state, old_state)
+ws -> crs : dispatch
+crs -> et : Transform(new_state)
+et --> crs : ContextProperty[] new
+crs -> et : Transform(old_state)
+et --> crs : ContextProperty[] old
+crs -> crs : diff by (Namespace, Instance, Name)\n— JSON-equality for composites
+alt no Alexa-visible delta
+  crs -> crs : skip (would be empty/noisy)
+else delta present
+  loop for each registered grantee
+    crs -> ts : GetAsync(userId)
+    ts --> crs : refresh token
+    crs -> lwa : RefreshAsync(refresh)
+    lwa --> crs : access token (cached < 1h)
+    crs -> egc : Send(ChangeReport, access)
+    egc -> gw : POST /v3/events
+    gw --> egc : 202 Accepted
+  end
+end
+
+note right of crs
+  Alexa endpoint id (e.g. switch#back_bedroom_lights),
+  not the dotted HA entity id —
+  otherwise the gateway returns 202
+  but the customer's UI silently
+  stops updating.
+end note
+
+== resilience ==
+ws --> crs : socket closed
+crs -> ws : reconnect (exponential backoff)
+
+@enduml

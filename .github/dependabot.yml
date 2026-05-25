@@ -1,0 +1,59 @@
+version: 2
+
+updates:
+  # NuGet — .NET projects
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    groups:
+      dotnet-minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+
+  # npm — AWS Lambda proxy
+  - package-ecosystem: npm
+    directory: /src/aws/lando-alexa-smart-home
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor:
+        update-types:
+          - minor
+          - patch
+
+  # Terraform providers
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    groups:
+      actions-minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: "docker"
+    directories:
+      - "src/azure/Lando.FunctionApp/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: chore

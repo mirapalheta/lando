@@ -1,0 +1,69 @@
+@startuml 09-hmac-flow
+title HMAC signing & verification (X-Lando-Signature: v1)
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 8
+skinparam BoxPadding 12
+skinparam ParticipantBackgroundColor #F6F6F6
+skinparam ParticipantBorderColor #888888
+
+participant "Alexa cloud" as alexa
+box "AWS Lambda\nlando-alexa-smart-home" #FFF7E6
+  participant "handler.ts" as h
+  participant "signRequest()\n(hmac.ts)" as sign
+  participant "getHmacSecret()\n(SecretsManager)" as sm
+end box
+box "Azure Function App" #F0F6FB
+  participant "FunctionBase" as base
+  participant "HmacSignatureVerifier" as ver
+  participant "HmacOptions\n(Key Vault → SharedSecret)" as kvopts
+  participant "SmartHomeHandler" as smh
+end box
+
+alexa -> h : Smart Home directive (JSON)
+h -> sm : load shared secret\n(cached after first call)
+sm --> h : key (Buffer)
+h -> sign : signRequest(key, body)
+sign -> sign : timestamp = floor(Date.now()/1000)\npayload = `${timestamp}.${body}`\ndigest = HMAC-SHA256(key, payload)
+sign --> h : { timestamp, signature: "v1=<hex>" }
+h -> base : POST + headers\nX-Lando-Timestamp\nX-Lando-Signature
+
+base -> ver : Validate(headers, bodyBytes)
+ver -> kvopts : SharedSecret
+kvopts --> ver : key
+ver -> ver : parse "v1=<hex>"\nlook up V1Scheme in Schemes
+alt missing/unknown version
+  ver --> base : ValidationException
+end
+ver -> ver : abs(now - timestamp) ≤ skew\n(±5 min default)
+alt outside skew window
+  ver --> base : ValidationException
+end
+ver -> ver : expected = HMAC-SHA256(key, `${ts}.${body}`)
+ver -> ver : CryptographicOperations.FixedTimeEquals\n(expected, provided)
+alt mismatch
+  ver --> base : ValidationException
+end
+ver --> base : ok
+base -> smh : HandleAsync(typed request)
+smh --> base : response
+base --> h : 200 + JSON
+
+note over ver
+  Verification runs **before**
+  deserialisation — a tampered or
+  unsigned payload never touches
+  the JSON parser.
+end note
+
+note over sign, ver
+  The "v1=" prefix is a wire-contract
+  version label. Adding "v2" is one
+  SignatureScheme entry on each side;
+  both ends roll forward in lockstep
+  without a flag day.
+end note
+
+@enduml

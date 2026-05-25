@@ -1,0 +1,30 @@
+# Terraform files
+.terraform/
+# .terraform.lock.hcl is intentionally committed — do not ignore it
+*.tfstate
+*.tfstate.*
+*.tfplan
+plan.txt
+*.tfvars
+!terraform.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+.env
+local.settings.json

@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/azure/">
+    <Project Path="src/azure/Lando.Abstractions/Lando.Abstractions.csproj" />
+    <Project Path="src/azure/Lando.Alexa.Core/Lando.Alexa.Core.csproj" />
+    <Project Path="src/azure/Lando.Alexa.SmartHome/Lando.Alexa.SmartHome.csproj" />
+    <Project Path="src/azure/Lando.FunctionApp/Lando.FunctionApp.csproj" />
+    <Project Path="src/azure/Lando.HomeAssistant.Abstractions/Lando.HomeAssistant.Abstractions.csproj" />
+    <Project Path="src/azure/Lando.HomeAssistant.Core/Lando.HomeAssistant.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Lando.Abstractions.Tests/Lando.Abstractions.Tests.csproj" />
+    <Project Path="tests/Lando.Alexa.Core.Tests/Lando.Alexa.Core.Tests.csproj" />
+    <Project Path="tests/Lando.Alexa.SmartHome.Tests/Lando.Alexa.SmartHome.Tests.csproj" />
+    <Project Path="tests/Lando.FunctionApp.Tests/Lando.FunctionApp.Tests.csproj" />
+    <Project Path="tests/Lando.HomeAssistant.Abstractions.Tests/Lando.HomeAssistant.Abstractions.Tests.csproj" />
+    <Project Path="tests/Lando.HomeAssistant.Core.Tests/Lando.HomeAssistant.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,182 @@
+<mxfile host="app.diagrams.net" agent="lando-oss-release" version="24.0.0">
+  <diagram name="Deployment" id="deployment">
+    <mxGraphModel dx="1280" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Lando — Deployment" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1120" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Alexa cloud (top) -->
+        <mxCell id="alexa" value="Alexa cloud&#10;(Smart Home API + Event Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF6E0;strokeColor=#B58900;fontSize=12;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="440" y="60" width="320" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- AWS Region -->
+        <mxCell id="aws-region" value="AWS Region&#10;(us-east-1 — Alexa Smart Home requirement)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7E6;strokeColor=#FF9900;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="170" width="320" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="lambda" value="AWS Lambda&#10;lando-alexa-smart-home&#10;(Node 24, TypeScript)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="90" y="220" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="sm" value="AWS Secrets Manager&#10;HMAC shared key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="90" y="310" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cw" value="CloudWatch Logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="90" y="385" width="260" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Azure Region -->
+        <mxCell id="azure-region" value="Azure Region&#10;(any — typically nearest to home)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF5FB;strokeColor=#0078D4;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="440" y="170" width="320" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="aca" value="Azure Container App&#10;Lando.FunctionApp&#10;(.NET 10, Functions on ACA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="220" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kv" value="Azure Key Vault&#10;HMAC secret · HA bearer ·&#10;LWA refresh tokens" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="305" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="acr" value="Azure Container Registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="390" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="appins" value="Application Insights / Log Analytics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="470" y="455" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mi" value="Managed Identity&#10;(RBAC into Key Vault + ACR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="520" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Home network -->
+        <mxCell id="home-network" value="Home network (private)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF6E5;strokeColor=#5B8C3E;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="820" y="170" width="320" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" value="VPN gateway&#10;(Tailscale subnet router)&#10;advertises home LAN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8C3E;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="850" y="220" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ha" value="Home Assistant&#10;(REST :8123 + WebSocket)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8C3E;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="850" y="310" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="devices" value="HA-managed devices&#10;(Zigbee · Z-Wave · WiFi · Matter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8C3E;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="850" y="385" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-client" value="Optional: Tailscale client on the Azure side&#10;(SOCKS proxy / userspace networking)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8C3E;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="455" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Tailscale overlay (annotation arc across Azure ↔ Home) -->
+        <mxCell id="ts-overlay" value="Tailscale overlay (WireGuard)" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#7A4E8E;strokeWidth=2;dashed=1;fontStyle=2;fontColor=#7A4E8E;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="640" width="720" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-note" value="Azure side dials *into* the overlay.&#10;Home gateway dials *out*. No public HA ingress." style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontColor=#444444;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="450" y="680" width="680" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e-alexa-lambda" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="alexa" target="lambda">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-alexa-lambda-l" value="Smart Home directive&#10;(HTTPS + bearer)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="e-alexa-lambda">
+            <mxGeometry x="-0.2" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-lambda-sm" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;" edge="1" parent="1" source="lambda" target="sm">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-lambda-sm-l" value="load HMAC key" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-lambda-sm">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-lambda-aca" style="endArrow=classic;html=1;rounded=0;strokeColor=#7A4E8E;strokeWidth=2;" edge="1" parent="1" source="lambda" target="aca">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-lambda-aca-l" value="POST /api/alexa/smarthome&#10;HMAC-signed (v1)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;fontColor=#7A4E8E;" vertex="1" connectable="0" parent="e-lambda-aca">
+            <mxGeometry x="-0.05" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-aca-kv" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;dashed=1;" edge="1" parent="1" source="aca" target="kv">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-aca-kv-l" value="secrets via MI" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-aca-kv">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-aca-appins" style="endArrow=classic;html=1;rounded=0;strokeColor=#888888;dashed=1;" edge="1" parent="1" source="aca" target="appins">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-aca-appins-l" value="logs / traces" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-aca-appins">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-acr-aca" style="endArrow=classic;html=1;rounded=0;strokeColor=#888888;dashed=1;" edge="1" parent="1" source="acr" target="aca">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-acr-aca-l" value="image pull" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-acr-aca">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-aca-ts" style="endArrow=classic;html=1;rounded=0;strokeColor=#7A4E8E;strokeWidth=2;" edge="1" parent="1" source="aca" target="ts-client">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-aca-ts-l" value="SOCKS proxy" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;fontColor=#7A4E8E;" vertex="1" connectable="0" parent="e-aca-ts">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-ts-gateway" style="endArrow=classic;html=1;rounded=0;strokeColor=#7A4E8E;strokeWidth=2;" edge="1" parent="1" source="ts-client" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-ts-gateway-l" value="WireGuard overlay" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;fontColor=#7A4E8E;" vertex="1" connectable="0" parent="e-ts-gateway">
+            <mxGeometry x="-0.05" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-gateway-ha" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;" edge="1" parent="1" source="gateway" target="ha">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-gateway-ha-l" value="HTTPS :8123" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-gateway-ha">
+            <mxGeometry x="-0.05" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-ha-devices" style="endArrow=classic;html=1;rounded=0;strokeColor=#555555;" edge="1" parent="1" source="ha" target="devices">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-aca-alexa" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E86AB;strokeWidth=2;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="aca" target="alexa">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-aca-alexa-l" value="Alexa.ChangeReport&#10;(POST Event Gateway, OAuth2)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;fontColor=#2E86AB;" vertex="1" connectable="0" parent="e-aca-alexa">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <mxCell id="e-lambda-cw" style="endArrow=classic;html=1;rounded=0;strokeColor=#888888;dashed=1;" edge="1" parent="1" source="lambda" target="cw">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="e-lambda-cw-l" value="logs" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;fontSize=10;" vertex="1" connectable="0" parent="e-lambda-cw">
+            <mxGeometry x="-0.1" relative="1" as="geometry" />
+          </mxCell>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8F8F8;strokeColor=#999999;fontSize=11;fontStyle=1;verticalAlign=top;spacingTop=4;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="500" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-1" value="—  default HTTPS path" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="72" y="520" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-2" value="—  HMAC-protected request path" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#7A4E8E;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="72" y="540" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-3" value="—  Tailscale overlay (WireGuard)" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#7A4E8E;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="72" y="560" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-4" value="—  proactive ChangeReport (Event Gateway)" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontColor=#2E86AB;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="72" y="580" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-5" value="– – –  infrastructure / telemetry" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fillColor=none;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="72" y="600" width="280" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,50 @@
+<Project>
+
+  <!--
+    Directory.Build.props — imported by MSBuild before every .csproj in this
+    tree. Properties here are defaults; individual projects may override them.
+  -->
+
+  <!-- ── Language & nullability ─────────────────────────────────────────── -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Explicit usings keep the codebase readable without ambient imports. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- ── Code style enforcement ─────────────────────────────────────────── -->
+  <PropertyGroup>
+    <!--
+      Runs .editorconfig-based style rules during build so violations surface
+      in CI the same way they do in the IDE.
+    -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- ── XML documentation (non-test assemblies only) ─────────────────── -->
+  <PropertyGroup>
+    <!--
+      Emit XML docs alongside the assembly. Required for IntelliSense on
+      package consumers and is validated by the CS1591 warning below.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!--
+      Warn when a public member lacks an XML doc comment. Kept as a warning
+      (not an error) in Debug so local dev stays frictionless; Release
+      promotes it to an error via TreatWarningsAsErrors below.
+    -->
+    <NoWarn>$(NoWarn)</NoWarn>
+  </PropertyGroup>
+
+  <!-- ── Release strictness ─────────────────────────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!--
+      Any compiler warning becomes a build error in Release. This keeps the
+      CI gate clean without slowing down local Debug cycles.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

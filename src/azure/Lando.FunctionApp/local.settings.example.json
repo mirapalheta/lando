@@ -1,0 +1,36 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ASPNETCORE_ENVIRONMENT": "Development",
+
+    // Optional: Set to use a deployed Key Vault instead of inline values below.
+    // Leave empty for local dev without Key Vault.
+    "KEY_VAULT_URI": "",
+
+    // Home Assistant connection — required
+    "HomeAssistant__ClientOptions__BaseUrl": "https://homeassistant.example.local:8123",
+    "HomeAssistant__ClientOptions__Token": "<your-ha-long-lived-access-token>",
+
+    // Optional: SOCKS5 proxy address if routing through a Tailscale sidecar
+    "HomeAssistant__ClientOptions__ProxyAddress": "",
+    // Optional: URL to use for proxy health checks
+    "HomeAssistant__ClientOptions__ProxyHealthCheckUrl": "",
+
+    // Optional: base64-encoded CA certificate for self-signed HA HTTPS certs
+    "HomeAssistant__ClientOptions__Certificate": "",
+
+    // Alexa LWA (Login with Amazon) credentials for Accept Grant flow
+    "Alexa__SmartHome__Authorization__ClientId": "<amzn1.application-oa2-client.YOUR_CLIENT_ID>",
+    "Alexa__SmartHome__Authorization__ClientSecret": "<your-lwa-auth-client-secret>",
+
+    // Alexa event gateway credentials for proactive state reports
+    "Alexa__SmartHome__Event__ClientId": "<amzn1.application-oa2-client.YOUR_EVENT_CLIENT_ID>",
+    "Alexa__SmartHome__Event__ClientSecret": "<your-lwa-event-client-secret>",
+
+    // HMAC shared secret — must match the value stored in AWS Secrets Manager
+    "Hmac__SharedSecret": "local-dev-secret-replace-me-for-prod-via-key-vault",
+    "Hmac__MaxClockSkewSeconds": "300"
+  }
+}

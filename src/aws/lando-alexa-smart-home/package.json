@@ -1,0 +1,37 @@
+{
+  "name": "lando-alexa-smart-home",
+  "version": "1.0.0",
+  "description": "AWS Lambda that proxies Alexa Smart Home directives to the Azure-hosted Lando bridge, signing each request with HMAC-SHA256.",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.mjs",
+  "scripts": {
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.mjs --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
+    "package": "npm run build && cd dist && zip -qr ../lambda.zip .",
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "test:coverage": "mkdir -p coverage && node --test --experimental-strip-types --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=./coverage/lcov.info test/*.test.ts",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "format": "prettier --write src test",
+    "format:check": "prettier --check src test",
+    "clean": "rm -rf dist lambda.zip coverage"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1053.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^25.9.1",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.0.0"
+  }
+}

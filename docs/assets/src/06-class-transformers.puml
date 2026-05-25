@@ -1,0 +1,97 @@
+@startuml 06-class-transformers
+title Entity transformers — Strategy
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #555555
+
+skinparam class {
+  BackgroundColor<<iface>>    #FBF2D6
+  BorderColor<<iface>>        #B58900
+  BackgroundColor<<abstract>> #DCEEF8
+  BorderColor<<abstract>>     #2E86AB
+  BackgroundColor<<discovery>> #E8F0E0
+  BorderColor<<discovery>>    #5B8C3E
+  BackgroundColor<<state>>    #F4E4D4
+  BorderColor<<state>>        #B07A3D
+  BackgroundColor<<dispatch>> #EAD7F0
+  BorderColor<<dispatch>>     #7A4E8E
+}
+
+interface "IEntityTransform<T>" as IET <<iface>> {
+  + Transform(entity) : T?
+}
+
+class "EntityTransform" as ET <<dispatch>> {
+  + Transform(entity) : DiscoveryEndpoint?
+  + Transform(entity) : ContextProperty[]?
+  -- impl --
+  resolves IEntityTransform<T>
+  keyed by entity.GetDomain()
+}
+
+abstract class "DiscoveryTransformerBase" as DTB <<abstract>> {
+  + Transform(entity) : DiscoveryEndpoint?
+  # GetDisplayCategory(entity)*
+  # GetDomainCapabilities(entity)*
+  # endpointId / manufacturer /\n  Alexa + EndpointHealth caps
+}
+
+abstract class "StateTransformerBase" as STB <<abstract>> {
+  + Transform(entity) : ContextProperty[]?
+  # GetDomainProperties(entity)*
+  # stamps EndpointHealth.connectivity\n  + uncertaintyInMilliseconds
+}
+
+class LightDiscoveryTransformer       <<discovery>>
+class SwitchDiscoveryTransformer      <<discovery>>
+class ClimateDiscoveryTransformer     <<discovery>>
+class CoverDiscoveryTransformer       <<discovery>>
+class FanDiscoveryTransformer         <<discovery>>
+class LockDiscoveryTransformer        <<discovery>>
+class MediaPlayerDiscoveryTransformer <<discovery>>
+class SensorDiscoveryTransformer      <<discovery>>
+
+class LightStateTransformer       <<state>>
+class SwitchStateTransformer      <<state>>
+class ClimateStateTransformer     <<state>>
+class CoverStateTransformer       <<state>>
+class FanStateTransformer         <<state>>
+class LockStateTransformer        <<state>>
+class MediaPlayerStateTransformer <<state>>
+class SensorStateTransformer      <<state>>
+
+IET <|.. ET
+IET <|.. DTB
+IET <|.. STB
+
+DTB <|-- LightDiscoveryTransformer
+DTB <|-- SwitchDiscoveryTransformer
+DTB <|-- ClimateDiscoveryTransformer
+DTB <|-- CoverDiscoveryTransformer
+DTB <|-- FanDiscoveryTransformer
+DTB <|-- LockDiscoveryTransformer
+DTB <|-- MediaPlayerDiscoveryTransformer
+DTB <|-- SensorDiscoveryTransformer
+
+STB <|-- LightStateTransformer
+STB <|-- SwitchStateTransformer
+STB <|-- ClimateStateTransformer
+STB <|-- CoverStateTransformer
+STB <|-- FanStateTransformer
+STB <|-- LockStateTransformer
+STB <|-- MediaPlayerStateTransformer
+STB <|-- SensorStateTransformer
+
+note bottom of ET
+  EntityTransform dispatches both
+  closed forms (DiscoveryEndpoint
+  and ContextProperty[]) via DI
+  keyed on the HA domain. Adding
+  a new domain = new files + two
+  keyed registrations; no edits
+  to the dispatcher.
+end note
+
+@enduml

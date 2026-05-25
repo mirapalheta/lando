@@ -1,0 +1,67 @@
+name: Bug report
+description: Something isn't working correctly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in as much detail as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Say "Alexa, turn on …"
+        2. Check Application Insights logs
+        3. See error …
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: >
+        Paste any relevant log output from Application Insights or CloudWatch.
+        Redact personal info (hostnames, IPs, tokens).
+      render: text
+
+  - type: input
+    id: lando-version
+    attributes:
+      label: Lando version
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2025.5.0"
+
+  - type: dropdown
+    id: sku
+    attributes:
+      label: Azure App Service Plan SKU
+      options:
+        - B1 (always-on)
+        - FC1 (Flex Consumption)
+        - Y1 (Consumption)
+        - Other

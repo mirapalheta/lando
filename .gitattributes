@@ -1,0 +1,66 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Line endings
+# ──────────────────────────────────────────────────────────────────────────────
+# Normalise all text files to LF in the repository; check out as LF on all
+# platforms (Windows developers should set core.autocrlf=false).
+* text=auto eol=lf
+
+# Force LF for scripts and source regardless of platform
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.ps1   text eol=crlf
+
+# .NET / C#
+*.cs    text eol=lf diff=csharp
+*.csx   text eol=lf
+*.csproj text eol=lf
+*.slnx  text eol=lf
+*.sln   text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
+*.config text eol=lf
+
+# TypeScript / JavaScript
+*.ts    text eol=lf
+*.mts   text eol=lf
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.json  text eol=lf
+*.jsonc text eol=lf
+
+# Terraform
+*.tf    text eol=lf
+*.tfvars text eol=lf
+
+# Web / docs
+*.md    text eol=lf diff=markdown
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+
+# Binaries — never diff or mangle
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.dll   binary
+*.exe   binary
+*.so    binary
+*.dylib binary
+
+# ──────────────────────────────────────────────────────────────────────────────
+# GitHub Linguist overrides
+# ──────────────────────────────────────────────────────────────────────────────
+# Don't count lock files toward language stats
+package-lock.json        linguist-generated=true
+*.lock                   linguist-generated=true
+.terraform.lock.hcl      linguist-generated=true
+
+# Don't count vendored/built artefacts
+dist/                    linguist-vendored=true
+node_modules/            linguist-vendored=true

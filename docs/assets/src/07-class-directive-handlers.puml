@@ -1,0 +1,89 @@
+@startuml 07-class-directive-handlers
+title Directive handlers — Chain of Responsibility
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #555555
+
+skinparam class {
+  BackgroundColor<<iface>>    #FBF2D6
+  BorderColor<<iface>>        #B58900
+  BackgroundColor<<abstract>> #DCEEF8
+  BorderColor<<abstract>>     #2E86AB
+  BackgroundColor<<entry>>    #EAD7F0
+  BorderColor<<entry>>        #7A4E8E
+  BackgroundColor<<handler>>  #E8F0E0
+  BorderColor<<handler>>      #5B8C3E
+  BackgroundColor<<aux>>      #F4E4D4
+  BorderColor<<aux>>          #B07A3D
+}
+
+interface "IRequestHandler<TReq,TResp>" as IRH <<iface>> {
+  + HandleAsync(req, ct) : Task<TResp>
+}
+
+interface "IDirectiveHandler" as IDH <<iface>> {
+  + HandleAsync(SmartHomeRequest, ct)
+}
+
+class "SmartHomeHandler" as SMH <<entry>> {
+  + HandleAsync(SmartHomeRequest, ct)
+  -- impl --
+  validate envelope
+  resolve IDirectiveHandler keyed
+  by Directive.Header.Name
+  throw InvalidDirective on miss
+}
+
+abstract class "DirectiveHandler<TReq, TResp>" as DH <<abstract>> {
+  + abstract DirectiveName : string
+  + HandleAsync(SmartHomeRequest, ct)
+  # abstract HandleAsync(TReq, ct) : TResp
+  -- shared --
+  deserialize payload
+  FluentValidation
+  response envelope
+  redacted logging
+}
+
+class AcceptGrantDirectiveHandler    <<handler>>
+class DiscoverDirectiveHandler       <<handler>>
+class "ControlDirectiveHandler<TReq>" as CDH <<handler>>
+class ReportStateDirectiveHandler    <<handler>>
+class ResumeScheduleDirectiveHandler <<handler>>
+
+interface "IPayloadTransform<TPayload>" as IPT <<iface>>
+interface "ITokenClient" as ITC <<iface>>
+interface "ITokenStore" as ITS <<iface>>
+interface "IEntityTransform<T>" as IET <<iface>>
+interface "IHomeAssistantClient" as IHAC <<aux>>
+
+IRH <|.. SMH
+IDH <|.. DH
+DH  <|-- AcceptGrantDirectiveHandler
+DH  <|-- DiscoverDirectiveHandler
+DH  <|-- CDH
+DH  <|-- ReportStateDirectiveHandler
+DH  <|-- ResumeScheduleDirectiveHandler
+
+SMH -down-> IDH : keyed by directive name\n("AcceptGrant", "Discover",\n"TurnOn", "SetBrightness", …)
+
+AcceptGrantDirectiveHandler --> ITC
+AcceptGrantDirectiveHandler --> ITS
+DiscoverDirectiveHandler    --> IET : <DiscoveryEndpoint>
+DiscoverDirectiveHandler    --> IHAC
+CDH                          --> IPT : keyed by directive
+CDH                          --> IHAC
+ReportStateDirectiveHandler --> IET : <ContextProperty[]>
+ReportStateDirectiveHandler --> IHAC
+
+note right of DH
+  Adding a directive =
+  1. subclass DirectiveHandler<,>
+  2. AddKeyedScoped<IDirectiveHandler,…>(name)
+  3. add an IRequestValidator pair
+  No edit to the dispatch table.
+end note
+
+@enduml

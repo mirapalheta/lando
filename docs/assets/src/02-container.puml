@@ -1,0 +1,68 @@
+@startuml 02-container
+title Lando — Container (inside the Azure Function App)
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam ArrowColor #555555
+
+skinparam rectangle {
+  BackgroundColor<<edge>>     #DCEEF8
+  BorderColor<<edge>>         #2E86AB
+  BackgroundColor<<core>>     #E8F0E0
+  BorderColor<<core>>         #5B8C3E
+  BackgroundColor<<infra>>    #F4E4D4
+  BorderColor<<infra>>        #B07A3D
+  BackgroundColor<<external>> #EEEEEE
+  BorderColor<<external>>     #888888
+  FontColor                   #222222
+}
+
+rectangle "AWS Lambda\nlando-alexa-smart-home" as lambda <<external>>
+rectangle "Alexa Event Gateway" as gw <<external>>
+rectangle "Home Assistant\n(REST + WS)" as ha <<external>>
+rectangle "Azure Key Vault" as kv <<external>>
+
+package "Azure Function App (Lando.FunctionApp)" {
+  rectangle "Functions/Alexa/AlexaSmartHome\n(HTTP trigger)" as trigger <<edge>>
+  rectangle "FunctionBase<TReq,TResp>\n— buffer body\n— invoke validator\n— deserialize\n— invoke handler\n— serialize (redact SecureString)" as base <<edge>>
+  rectangle "HmacSignatureVerifier\n(IRequestValidator)\nconstant-time, ±5min skew" as hmac <<core>>
+
+  package "Lando.Alexa.SmartHome" {
+    rectangle "SmartHomeHandler\n(IRequestHandler)\nenvelope + dispatch" as smh <<core>>
+    rectangle "DirectiveHandler<,>\nbase + per-directive subclasses\n[Chain of Responsibility]" as dh <<core>>
+    rectangle "IPayloadTransform<TPayload>\n[Strategy, per directive]" as pt <<core>>
+    rectangle "IEntityTransform<T>\n[Strategy, per HA domain]\nDiscoveryEndpoint + ContextProperty[]" as et <<core>>
+    rectangle "ChangeReportService\n(IHostedService)\nWS subscriber + diff" as crs <<core>>
+    rectangle "EventGatewayClient" as egc <<core>>
+    rectangle "LwaTokenClient" as lwa <<core>>
+  }
+
+  package "Lando.HomeAssistant.Core" {
+    rectangle "HomeAssistantClient\n(REST: GET state / POST service)" as hac <<core>>
+    rectangle "HomeAssistantWebSocketClient\n(WS: subscribe state_changed)" as haws <<core>>
+  }
+
+  rectangle "TokenStore\n(Key Vault-backed ITokenStore)" as ts <<infra>>
+}
+
+lambda --> trigger : POST /api/alexa/smarthome\nX-Lando-Signature
+trigger --> base
+base --> hmac : Validate(headers, body)
+base --> smh : HandleAsync(request)
+smh --> dh : keyed by directive name
+dh --> pt : keyed by directive name\n(Control* only)
+dh --> et : DiscoveryEndpoint / ContextProperty[]
+dh --> hac : call_service / get_state
+dh --> ts : tokens (AcceptGrant)
+hac --> ha : HTTPS over Tailscale
+haws --> ha : WS over Tailscale
+crs --> haws : subscribe
+crs --> et : recompute state
+crs --> egc : POST ChangeReport
+egc --> gw
+egc --> lwa : refresh access token
+lwa --> ts : load refresh token
+ts --> kv : get/set secret
+
+@enduml

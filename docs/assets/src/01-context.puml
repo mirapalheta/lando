@@ -1,0 +1,49 @@
+@startuml 01-context
+title Lando — System Context
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam ArrowColor #555555
+skinparam ArrowFontColor #333333
+
+skinparam actor {
+  BackgroundColor #FFF6E0
+  BorderColor #B58900
+}
+skinparam rectangle {
+  BackgroundColor<<system>>   #DCEEF8
+  BorderColor<<system>>       #2E86AB
+  BackgroundColor<<external>> #EFEFEF
+  BorderColor<<external>>     #888888
+  BackgroundColor<<network>>  #E8F0E0
+  BorderColor<<network>>      #5B8C3E
+  FontColor                   #222222
+}
+
+actor "Alexa user\n(at home)" as user
+
+rectangle "Alexa cloud\n[external]\nSmart Home API + Event Gateway" as alexa <<external>>
+rectangle "AWS Lambda\n[external runtime]\nlando-alexa-smart-home\n— HMAC-signs and forwards" as lambda <<system>>
+rectangle "Azure Container App\n[external runtime]\nLando Function App\n— verify + dispatch + translate" as func <<system>>
+rectangle "Tailscale overlay\n[private mesh]" as tailscale <<network>>
+rectangle "Home Assistant\n[local network]\nREST + WebSocket APIs" as ha <<external>>
+
+user -down-> alexa : voice / app\n"turn on the lamp"
+alexa -down-> lambda : Smart Home directive\n(HTTPS, bearer)
+lambda -down-> func : POST /api/alexa/smarthome\n(HMAC-signed JSON)
+func -down-> tailscale : HTTPS to ha.local\nvia SOCKS proxy
+tailscale -down-> ha : REST: call_service\nWS: subscribe state_changed
+ha -up-> tailscale : state_changed events
+tailscale -up-> func : ChangeReport input
+func -up-> alexa : Alexa.ChangeReport\n(POST Event Gateway)
+
+note right of func
+  Single Azure Function App.
+  No public ingress to the home —
+  the home LAN dials *out* to
+  Tailscale; the Azure side dials
+  *into* the same overlay.
+end note
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml 04-seq-control
+title Sequence — PowerController.TurnOn
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 8
+skinparam BoxPadding 12
+skinparam ParticipantBackgroundColor #F6F6F6
+skinparam ParticipantBorderColor #888888
+skinparam ActorBackgroundColor #FFF6E0
+skinparam ActorBorderColor #B58900
+
+actor "Alexa user" as user
+participant "Alexa cloud" as alexa
+participant "AWS Lambda" as lambda
+box "Azure Function App" #F0F6FB
+  participant "FunctionBase" as base
+  participant "HmacSignatureVerifier" as hmac
+  participant "SmartHomeHandler" as smh
+  participant "ControlDirectiveHandler<TurnOn>" as cdh
+  participant "TurnOnPayloadTransform\n(IPayloadTransform<TurnOn>)" as pt
+  participant "HomeAssistantClient" as hac
+end box
+participant "Home Assistant" as ha
+
+user -> alexa : "turn on the lamp"
+alexa -> lambda : PowerController.TurnOn directive
+lambda -> base : POST + X-Lando-Signature
+base -> hmac : Validate
+hmac --> base : ok
+base -> smh : HandleAsync(SmartHomeRequest)
+smh -> cdh : keyed dispatch ("TurnOn")
+cdh -> cdh : FluentValidation\n(payload validator pair)
+cdh -> pt : Transform(entity, payload)
+pt --> cdh : HomeAssistantRequest.TurnOn\n(service=light.turn_on,\nentity_id=light.lamp)
+cdh -> hac : CallServiceAsync(request)
+hac -> ha : POST /api/services/light/turn_on
+ha --> hac : 200
+hac --> cdh : ok
+cdh --> smh : Alexa.Response (success)
+smh --> base : SmartHomeResponse
+base --> lambda : 200 + JSON
+lambda --> alexa : ack
+alexa --> user : audio confirmation
+
+note right of pt
+  Each HomeAssistantRequest factory
+  binds the service name to the
+  exact set of fields HA expects,
+  so a transformer can't accidentally
+  set a temperature on light.turn_on.
+end note
+
+@enduml

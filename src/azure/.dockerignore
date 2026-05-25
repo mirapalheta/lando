@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts
+**/bin/
+**/obj/
+**/publish/
+
+# IDE
+.vscode/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+.idea/
+
+# Docker
+Dockerfile
+.dockerignore
+docker/
+
+# CI/CD
+.github/
+
+# Terraform
+terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Documentation
+README.md
+LICENSE
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node/npm (if used)
+node_modules/
+package-lock.json
+
+# Other
+*.log
+.env
+.env.local

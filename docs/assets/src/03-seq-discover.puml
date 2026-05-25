@@ -1,0 +1,58 @@
+@startuml 03-seq-discover
+title Sequence — Alexa.Discovery.Discover
+
+skinparam defaultFontName Helvetica
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 8
+skinparam BoxPadding 12
+skinparam ParticipantBackgroundColor #F6F6F6
+skinparam ParticipantBorderColor #888888
+skinparam ActorBackgroundColor #FFF6E0
+skinparam ActorBorderColor #B58900
+
+actor "Alexa user" as user
+participant "Alexa cloud" as alexa
+participant "AWS Lambda" as lambda
+box "Azure Function App" #F0F6FB
+  participant "FunctionBase" as base
+  participant "HmacSignatureVerifier" as hmac
+  participant "SmartHomeHandler" as smh
+  participant "DiscoverDirectiveHandler" as ddh
+  participant "EntityTransform\n(IEntityTransform<DiscoveryEndpoint>)" as et
+  participant "HomeAssistantClient" as hac
+end box
+participant "Home Assistant" as ha
+
+user -> alexa : "discover devices"
+alexa -> lambda : Alexa.Discovery.Discover directive
+lambda -> lambda : signRequest(timestamp.body)
+lambda -> base : POST /api/alexa/smarthome\nX-Lando-Signature: v1=<hex>
+base -> hmac : Validate(headers, body)
+hmac --> base : ok
+base -> smh : HandleAsync(SmartHomeRequest)
+smh -> ddh : keyed dispatch ("Discover")
+ddh -> hac : GET /api/states
+hac -> ha : HTTPS over Tailscale
+ha --> hac : entities[]
+hac --> ddh : HomeAssistantEntity[]
+loop for each entity
+  ddh -> et : Transform(entity)
+  et -> et : resolve per-domain transformer\n(LightDiscoveryTransformer, …)
+  et --> ddh : DiscoveryEndpoint?
+end
+ddh --> smh : DiscoverResponse(endpoints)
+smh --> base : SmartHomeResponse
+base --> lambda : 200 + JSON
+lambda --> alexa : Smart Home discovery response
+alexa --> user : "I found 24 devices"
+
+note over ddh, et
+  Entities whose HA domain has no
+  registered transformer return null
+  and are dropped — a partial deploy
+  still yields a valid (smaller)
+  discovery response.
+end note
+
+@enduml

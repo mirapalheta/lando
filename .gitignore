@@ -1,0 +1,55 @@
+# Build results
+bin/
+obj/
+dist/
+*.dll
+*.exe
+*.so
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.user
+*.suo
+*.sln.iml
+
+# Local development
+local.settings.json
+.env
+*.log
+
+# Azurite (Azure Storage emulator)
+**/__azurite_db_*.json
+**/__blobstorage__/
+**/AzuriteConfig
+
+# Azure Functions
+obj/
+bin/
+
+# Node (for Azure Functions extensions)
+node_modules/
+
+# Terraform
+.terraform/
+*.tfstate*
+*.tfplan
+terraform/plan.txt
+# Note: .terraform.lock.hcl should be committed — do NOT add it here
+
+# Secrets / certs
+*.pem
+*.key
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Coverage reports
+coverage.cobertura.xml
+coverage/

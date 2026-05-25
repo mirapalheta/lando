@@ -1,0 +1,34 @@
+{
+  "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "default": "Warning",
+      "Function": "Information",
+      "Host.Function.Console": "Information",
+      "Host.Aggregator": "Warning",
+      "Host.Startup": "Warning",
+      "Host.General": "Warning",
+      "Host.Results": "Warning",
+      "Microsoft.Azure.WebJobs": "Warning",
+      "Microsoft.Azure.WebJobs.Hosting": "Warning",
+      "Microsoft.Azure.WebJobs.Script": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    },
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond": 20,
+        "evaluationInterval": "01:00:00",
+        "initialSamplingPercentage": 100.0,
+        "samplingPercentageIncreaseTimeout": "01:01:00",
+        "samplingPercentageDecreaseTimeout": "01:05:00",
+        "minSamplingPercentage": 0.1,
+        "maxSamplingPercentage": 100.0,
+        "movingAverageRatio": 0.25,
+        "excludedTypes": "Availability;Dependency;Exception;PageView;Request;Trace",
+        "includedTypes": "Event"
+      }
+    }
+  },
+  "functionTimeout": "00:05:00"
+}

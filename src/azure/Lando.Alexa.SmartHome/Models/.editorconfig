@@ -1,0 +1,3 @@
+# Shut off CS1591 for all C# files inside this folder and its subfolders
+[*.cs]
+dotnet_diagnostic.CS1591.severity = none
