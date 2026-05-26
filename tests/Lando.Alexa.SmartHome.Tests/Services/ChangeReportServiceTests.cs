@@ -92,16 +92,20 @@ public class ChangeReportServiceTests
     }
 
     /// <summary>
-    /// Runs the service over a single-event subscription. The cancellation
-    /// token kills the reconnect-loop's exponential-backoff sleep so the test
-    /// finishes quickly instead of waiting for InitialReconnectDelay.
+    /// Runs the service over a single-event subscription. Waits for the
+    /// subscription enumerable to be fully consumed (i.e. the event has been
+    /// processed) before asserting, rather than relying on a fixed delay that
+    /// is fragile under CI scheduler pressure.
     /// </summary>
     private static async Task<GatewayRecorder> RunOnceAsync(
         HomeAssistantStateChangedEvent ev,
         Func<HomeAssistantEntity, ContextProperty[]?> transform)
     {
+        var subscriptionDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
         var ws = new Mock<IHomeAssistantWebSocketClient>();
-        ws.Setup(w => w.SubscribeAsync(It.IsAny<CancellationToken>())).Returns(ToAsync([ev]));
+        ws.Setup(w => w.SubscribeAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(ct => ToAsync([ev], subscriptionDone, ct));
 
         var recorder = new GatewayRecorder();
         var gateway = new Mock<IEventGatewayClient>();
@@ -124,24 +128,25 @@ public class ChangeReportServiceTests
         var sut = new ChangeReportService(ws.Object, gateway.Object, transformer.Object,
             NullLogger<ChangeReportService>.Instance);
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
-        try
-        {
-            await sut.StartAsync(cts.Token);
-            await Task.Delay(50, CancellationToken.None);
-            await sut.StopAsync(CancellationToken.None);
-        }
-        catch (OperationCanceledException) { }
+        await sut.StartAsync(CancellationToken.None);
+        await subscriptionDone.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await sut.StopAsync(CancellationToken.None);
 
         return recorder;
     }
 
     private static async IAsyncEnumerable<HomeAssistantStateChangedEvent> ToAsync(
         IEnumerable<HomeAssistantStateChangedEvent> events,
+        TaskCompletionSource done,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         foreach (var e in events)
-        { ct.ThrowIfCancellationRequested(); yield return e; await Task.Yield(); }
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return e;
+            await Task.Yield();
+        }
+        done.TrySetResult();
     }
 
     private static ContextProperty Property(string name, object value) => new()
