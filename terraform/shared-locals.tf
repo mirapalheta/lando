@@ -78,7 +78,7 @@ locals {
   # Secrets configuration - only include those with values provided
   secrets = {
     names = local.secret_names_map
-    enabled = concat(
+    enabled = nonsensitive(concat(
       [
         local.secret_names_map.TailscaleAuthKey,
         local.secret_names_map.HomeAssistantToken,
@@ -87,7 +87,7 @@ locals {
         local.secret_names_map.HmacSharedSecret
       ],
       var.home_assistant_certificate != "" ? [local.secret_names_map.HomeAssistantCertificate] : []
-    )
+    ))
     values = {
       "tailscale-authkey"                   = var.tailscale_auth_key
       "home-assistant-token"                = var.home_assistant_token
@@ -133,10 +133,16 @@ locals {
     }
   }
 
-  # AWS Lambda packaging paths — consumed by data.archive_file in aws-lambda.tf
+  # AWS Lambda packaging paths — consumed by aws-lambda-build.tf and aws-lambda.tf.
+  #   source_dir → npm package root (cwd for `npm ci && npm run build`; also the
+  #                directory whose source files determine the build hash)
+  #   dist_dir   → esbuild output directory (zipped by build_lambda.sh)
+  #   zip_path   → final packaged Lambda bundle, written by build_lambda.sh and
+  #                referenced as aws_lambda_function.alexa_smart_home.filename
   lambdas = {
     alexa_smart_home = {
-      source_dir = "${path.module}/../src/aws/lando-alexa-smart-home/dist"
+      source_dir = "${path.module}/../src/aws/lando-alexa-smart-home"
+      dist_dir   = "${path.module}/../src/aws/lando-alexa-smart-home/dist"
       zip_path   = "${path.module}/.terraform/alexa_smart_home.zip"
     }
   }

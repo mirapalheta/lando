@@ -1,3 +1,9 @@
+# ============================================================================
+# Azure foundation
+# ============================================================================
+# Resource group + storage account. The storage account doubles as the
+# Terraform backend (tfstate container lives inside it).
+
 output "resource_group_id" {
   description = "The ID of the created resource group"
   value       = azurerm_resource_group.lando.id
@@ -17,6 +23,11 @@ output "storage_account_name" {
   description = "The name of the storage account"
   value       = azurerm_storage_account.lando.name
 }
+
+# ============================================================================
+# Azure security & observability
+# ============================================================================
+# Key Vault, Application Insights, Log Analytics, Monitor action group.
 
 output "key_vault_id" {
   description = "The ID of the Key Vault"
@@ -59,6 +70,30 @@ output "action_group_name" {
   value       = azurerm_monitor_action_group.lando.name
 }
 
+# ============================================================================
+# Azure diagnostic settings
+# ============================================================================
+
+output "diagnostic_setting_container_app_id" {
+  description = "The ID of the Container App diagnostic setting"
+  value       = azurerm_monitor_diagnostic_setting.container_app.id
+}
+
+output "diagnostic_setting_key_vault_id" {
+  description = "The ID of the Key Vault diagnostic setting"
+  value       = azurerm_monitor_diagnostic_setting.key_vault.id
+}
+
+# output "smart_detector_alert_rule_id" {
+#   description = "The ID of the smart detector alert rule for failure anomalies"
+#   value       = azurerm_monitor_smart_detector_alert_rule.failure_anomalies.id
+# }
+
+# ============================================================================
+# Azure Container App
+# ============================================================================
+# Container App + its environment + the workload identity it runs as.
+
 output "container_app_id" {
   description = "The ID of the Container App"
   value       = azurerm_container_app.lando.id
@@ -79,6 +114,16 @@ output "container_app_url" {
   value       = azurerm_container_app.lando.ingress[0].fqdn
 }
 
+output "container_app_environment_id" {
+  description = "The ID of the Container App Environment"
+  value       = azurerm_container_app_environment.lando.id
+}
+
+output "container_app_principal_id" {
+  description = "The principal ID of the Container App's managed identity"
+  value       = azurerm_container_app.lando.identity[0].principal_id
+}
+
 output "user_assigned_identity_id" {
   description = "The ID of the User-Assigned Identity"
   value       = azurerm_user_assigned_identity.lando.id
@@ -89,14 +134,16 @@ output "user_assigned_identity_principal_id" {
   value       = azurerm_user_assigned_identity.lando.principal_id
 }
 
-output "container_app_principal_id" {
-  description = "The principal ID of the Container App's managed identity"
-  value       = azurerm_container_app.lando.identity[0].principal_id
-}
+# ============================================================================
+# Azure Container Registry
+# ============================================================================
+# Terraform's image build uses `az acr login` during `null_resource.acr_image_build`,
+# so the admin credentials below aren't required by the deploy workflow — kept
+# around for ad-hoc docker / push-pull tooling.
 
-output "container_app_environment_id" {
-  description = "The ID of the Container App Environment"
-  value       = azurerm_container_app_environment.lando.id
+output "container_registry_id" {
+  description = "The ID of the Azure Container Registry"
+  value       = azurerm_container_registry.lando.id
 }
 
 output "container_registry_name" {
@@ -109,10 +156,33 @@ output "container_registry_login_server" {
   value       = azurerm_container_registry.lando.login_server
 }
 
-output "container_registry_id" {
-  description = "The ID of the Azure Container Registry"
-  value       = azurerm_container_registry.lando.id
+output "container_registry_url" {
+  description = "The login server URL for the container registry"
+  value       = azurerm_container_registry.lando.login_server
 }
+
+output "container_registry_username" {
+  description = "The admin username for the container registry"
+  value       = azurerm_container_registry.lando.admin_username
+}
+
+output "container_registry_password" {
+  description = "The admin password for the container registry"
+  value       = azurerm_container_registry.lando.admin_password
+  sensitive   = true
+}
+
+output "container_app_image_tag" {
+  description = "Effective image tag deployed to the Container App — captured from var.image_tag the last time source files changed and persisted via terraform_data.image_state. Diverges from var.image_tag whenever the tag was bumped without a code change."
+  value       = terraform_data.image_state.output
+}
+
+# ============================================================================
+# Azure tenancy + GitHub Actions service principal
+# ============================================================================
+# Consumed by scripts/setup-github-secrets.sh and pushed into GitHub as
+# AZURE_CLIENT_ID / AZURE_CLIENT_SECRET / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID
+# for the azure/login@v3 step in the workflow.
 
 output "azure_subscription_id" {
   description = "Azure subscription ID"
@@ -140,40 +210,9 @@ output "github_actions_service_principal_object_id" {
   value       = azuread_service_principal.github_actions.object_id
 }
 
-output "container_registry_url" {
-  description = "The login server URL for the container registry"
-  value       = azurerm_container_registry.lando.login_server
-}
-
-output "container_registry_username" {
-  description = "The admin username for the container registry"
-  value       = azurerm_container_registry.lando.admin_username
-}
-
-output "container_registry_password" {
-  description = "The admin password for the container registry"
-  value       = azurerm_container_registry.lando.admin_password
-  sensitive   = true
-}
-
-output "diagnostic_setting_container_app_id" {
-  description = "The ID of the Container App diagnostic setting"
-  value       = azurerm_monitor_diagnostic_setting.container_app.id
-}
-
-output "diagnostic_setting_key_vault_id" {
-  description = "The ID of the Key Vault diagnostic setting"
-  value       = azurerm_monitor_diagnostic_setting.key_vault.id
-}
-
-# output "smart_detector_alert_rule_id" {
-#   description = "The ID of the smart detector alert rule for failure anomalies"
-#   value       = azurerm_monitor_smart_detector_alert_rule.failure_anomalies.id
-# }
-
-# ========================================
-# AWS / Alexa Lambda outputs
-# ========================================
+# ============================================================================
+# AWS / Alexa Smart Home Lambda
+# ============================================================================
 
 output "alexa_smart_home_arn" {
   description = "ARN of the Alexa Smart Home proxy Lambda."
@@ -193,4 +232,97 @@ output "hmac_shared_secret_aws_arn" {
 output "aws_account_id" {
   description = "AWS account hosting the Alexa Lambda."
   value       = data.aws_caller_identity.current.account_id
+}
+
+# ============================================================================
+# AWS GitHub Actions IAM deploy user
+# ============================================================================
+# Consumed by scripts/setup-github-secrets.sh and pushed into GitHub as
+# AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY secrets. Mirrors the Azure SP
+# pattern (github_actions_client_id / github_actions_client_secret).
+
+output "aws_github_actions_access_key_id" {
+  description = "Access key ID for the GitHub Actions IAM user (user-{project}-github-actions)."
+  value       = aws_iam_access_key.github_actions.id
+}
+
+output "aws_github_actions_access_key_secret" {
+  description = "Secret access key for the GitHub Actions IAM user. Only visible at create time; rotate by tainting aws_iam_access_key.github_actions."
+  value       = aws_iam_access_key.github_actions.secret
+  sensitive   = true
+}
+
+output "aws_region" {
+  description = "AWS region the Lambda + Secrets Manager secret live in. Pushed into GH as AWS_REGION."
+  value       = var.aws_region
+}
+
+# ============================================================================
+# Passthrough — terraform.tfvars values mirrored to GitHub Actions
+# ============================================================================
+# These don't represent any TF-managed resource; they relay terraform.tfvars
+# values so scripts/setup-github-secrets.sh can push them into GitHub in one
+# `terraform output` pass. Source of truth remains in terraform.tfvars.
+#
+# The HA CA/cert outputs are read with file() so they expose the PEM
+# *content* rather than the on-disk path. Path-based outputs would flip
+# between local and CI because the same cert lives under different paths
+# on each host (~/source/.../certs/foo.pem locally vs /home/runner/.../
+# in GitHub Actions); content-based outputs are stable as long as the
+# bytes are identical. Empty string when the corresponding var is unset.
+
+output "home_assistant_base_url" {
+  description = "Home Assistant base URL passthrough. Pushed into GH as HOME_ASSISTANT_BASE_URL."
+  value       = var.home_assistant_base_url
+}
+
+output "home_assistant_token" {
+  description = "Home Assistant long-lived access token passthrough. Pushed into GH as HOME_ASSISTANT_TOKEN."
+  value       = var.home_assistant_token
+  sensitive   = true
+}
+
+output "home_assistant_ca" {
+  description = "Home Assistant CA PEM content (build-time). Empty if var.home_assistant_ca_file is unset. Pushed into GH as HOME_ASSISTANT_CA."
+  value       = var.home_assistant_ca_file == "" ? "" : file(var.home_assistant_ca_file)
+  sensitive   = true
+}
+
+output "home_assistant_cert" {
+  description = "Home Assistant host certificate PEM content (build-time). Empty if var.home_assistant_cert_file is unset. Pushed into GH as HOME_ASSISTANT_CERT."
+  value       = var.home_assistant_cert_file == "" ? "" : file(var.home_assistant_cert_file)
+  sensitive   = true
+}
+
+output "tailscale_auth_key" {
+  description = "Tailscale auth key passthrough. Pushed into GH as TAILSCALE_AUTH_KEY."
+  value       = var.tailscale_auth_key
+  sensitive   = true
+}
+
+output "alexa_smart_home_skill_id" {
+  description = "Alexa Smart Home skill ID passthrough. Pushed into GH as ALEXA_SMART_HOME_SKILL_ID."
+  value       = var.alexa_smart_home_skill_id
+}
+
+output "alexa_smart_home_auth_client_id" {
+  description = "Login-with-Amazon client ID for inbound bearer-token validation. Pushed into GH as ALEXA_AUTH_CLIENT_ID."
+  value       = var.alexa_smart_home_auth_client_id
+}
+
+output "alexa_smart_home_auth_client_secret" {
+  description = "Login-with-Amazon client secret paired with alexa_smart_home_auth_client_id. Pushed into GH as ALEXA_AUTH_CLIENT_SECRET."
+  value       = var.alexa_smart_home_auth_client_secret
+  sensitive   = true
+}
+
+output "alexa_smart_home_event_client_id" {
+  description = "Login-with-Amazon client ID for the Alexa Event Gateway. Pushed into GH as ALEXA_EVENT_CLIENT_ID."
+  value       = var.alexa_smart_home_event_client_id
+}
+
+output "alexa_smart_home_event_client_secret" {
+  description = "Login-with-Amazon client secret paired with alexa_smart_home_event_client_id. Pushed into GH as ALEXA_EVENT_CLIENT_SECRET."
+  value       = var.alexa_smart_home_event_client_secret
+  sensitive   = true
 }

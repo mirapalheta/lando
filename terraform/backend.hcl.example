@@ -1,0 +1,38 @@
+# ============================================================================
+# Terraform backend configuration — Azure Blob Storage
+# ============================================================================
+# Copy this file to `backend.hcl` (gitignored via *.tfvars + custom rule) and
+# fill in the four values below, then run:
+#
+#     terraform init -backend-config=backend.hcl
+#
+# On a fresh checkout with no existing state, this is part of the two-step
+# bootstrap described in the README — see the "State management" section.
+#
+# Authentication: the backend reads `use_azuread_auth = true` from provider.tf
+# and authenticates as whoever ran `az login`. That identity needs the role
+# `Storage Blob Data Contributor` on the tfstate container (one-time
+# `az role assignment create` documented in the README).
+# ============================================================================
+
+# Resource group that contains the storage account holding the state blob.
+# For a default deployment this is `rg-lando-<location>`, e.g. `rg-lando-centralus`.
+# After the first apply, get the exact value with:
+#     terraform output -raw resource_group_name
+resource_group_name = "rg-lando-centralus"
+
+# Storage account name. For a default deployment this is `stlando<location>`,
+# e.g. `stlandocentralus`. Storage account names are globally unique, so a fork
+# will have a different value. After the first apply:
+#     terraform output -raw storage_account_name
+storage_account_name = "stlandocentralus"
+
+# Blob container within the storage account. The container is created by
+# terraform/azure-storage.tf and is always named `tfstate`. Don't change this
+# unless you also change the resource definition.
+container_name = "tfstate"
+
+# Path of the state blob within the container. One state file per environment;
+# if you stand up additional environments (e.g. staging, prod) use distinct
+# keys like `lando-staging.tfstate` so they don't collide.
+key = "lando.tfstate"

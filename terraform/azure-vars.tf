@@ -42,6 +42,31 @@ variable "home_assistant_base_url" {
 }
 
 # ----------------------------------------
+# Home Assistant trust-store certificates (BUILD-TIME)
+# ----------------------------------------
+# These point at PEM files on disk; their contents are read by
+# scripts/build_image.sh and baked into the container image's OS trust
+# store via the Dockerfile's ha_caf / ha_crt build secrets.
+# Distinct from `home_assistant_certificate` above, which is the
+# *runtime* certificate stored in Key Vault for the .NET HttpClient.
+#
+# Paths are resolved relative to the terraform working directory
+# (lando/terraform/), so prefer absolute paths in terraform.tfvars unless
+# you really mean a relative one.
+
+variable "home_assistant_ca_file" {
+  description = "Path to a PEM CA bundle file to install into the container's OS trust store at build time. Empty (default) = no CA installed."
+  type        = string
+  default     = ""
+}
+
+variable "home_assistant_cert_file" {
+  description = "Path to a PEM cert file to install into the container's OS trust store at build time. Empty (default) = no cert installed."
+  type        = string
+  default     = ""
+}
+
+# ----------------------------------------
 # Tailscale (Azure-side sidecar)
 # ----------------------------------------
 

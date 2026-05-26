@@ -39,7 +39,13 @@ resource "azurerm_container_app" "lando" {
   resource_group_name          = azurerm_resource_group.lando.name
   revision_mode                = "Single"
   max_inactive_revisions       = 100
-  tags                         = var.tags
+  # Merge the effective image tag in so the deployed version is visible
+  # in the Azure Portal without having to inspect a revision's container
+  # spec. Tracks terraform_data.image_state.output, so it updates only
+  # when source files actually change (same trigger as the build itself).
+  tags = merge(var.tags, {
+    Version = terraform_data.image_state.output
+  })
 
   identity {
     type         = "UserAssigned"
@@ -83,8 +89,12 @@ resource "azurerm_container_app" "lando" {
     # and network configuration from the gateway container (shared network namespace).
     # Bare minimum allocation: Workload is I/O-bound (HTTP to Home Assistant), not CPU-intensive
     container {
-      name   = "app"
-      image  = "${azurerm_container_registry.lando.login_server}/${var.project_name}:${var.image_tag}"
+      name = "app"
+      # Use the effective tag persisted in terraform_data.image_state.output,
+      # not var.image_tag directly. Bumping var.image_tag without changing
+      # source code is a no-op; the container app keeps pointing at the
+      # image that was actually built for the current sources.
+      image  = "${azurerm_container_registry.lando.login_server}/${var.project_name}:${terraform_data.image_state.output}"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -342,6 +352,7 @@ resource "azurerm_container_app" "lando" {
     azurerm_key_vault_secret.secrets,
     azurerm_user_assigned_identity.lando,
     azurerm_role_assignment.container_app_key_vault_secrets_user,
-    azurerm_application_insights.lando
+    azurerm_application_insights.lando,
+    null_resource.acr_image_build
   ]
 }

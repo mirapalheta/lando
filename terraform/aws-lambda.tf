@@ -10,21 +10,6 @@
 # ========================================
 
 # ----------------------------------------
-# Lambda packaging
-# ----------------------------------------
-# The TypeScript source is bundled by esbuild into src/aws/lando-alexa-smart-home/dist/.
-# `release.sh` runs `npm ci && npm run build` there before `terraform apply`;
-# for a one-off manual apply, do the same yourself first:
-#   (cd ../src/aws/lando-alexa-smart-home && npm ci && npm run build)
-# We do not run npm from Terraform — keeping build and infra commands separate
-# avoids requiring a Node toolchain on every machine that touches the state.
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = local.lambdas.alexa_smart_home.source_dir
-  output_path = local.lambdas.alexa_smart_home.zip_path
-}
-
-# ----------------------------------------
 # IAM
 # ----------------------------------------
 resource "aws_iam_role" "alexa_smart_home" {
@@ -88,8 +73,16 @@ resource "aws_lambda_function" "alexa_smart_home" {
   handler       = "index.handler"
   architectures = ["x86_64"]
 
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  # build_lambda.sh writes the zip to this path. Filename is only read by
+  # the AWS provider when source_code_hash differs from state (i.e. an
+  # upload is needed) — and that's exactly when null_resource.lambda_build
+  # has been triggered to (re)produce the file.
+  filename = local.lambdas.alexa_smart_home.zip_path
+  # Derive the change-detection marker from the source files directly,
+  # not from the built zip. This lets `terraform plan` resolve a stable
+  # hash without dist/ or the zip existing (e.g. fresh CI checkout) and
+  # makes the hash stable across non-deterministic build artifacts.
+  source_code_hash = local.alexa_smart_home_code_hash
 
   memory_size = var.alexa_smart_home_memory_mb
   timeout     = var.alexa_smart_home_timeout_seconds
@@ -112,6 +105,7 @@ resource "aws_lambda_function" "alexa_smart_home" {
     aws_iam_role_policy_attachment.alexa_smart_home_basic_execution,
     aws_iam_role_policy.alexa_smart_home_secrets_read,
     aws_cloudwatch_log_group.alexa_smart_home,
+    null_resource.lambda_build,
   ]
 }
 

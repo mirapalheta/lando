@@ -1,5 +1,5 @@
 # Terraform files
-.terraform/
+.terraform
 # .terraform.lock.hcl is intentionally committed — do not ignore it
 *.tfstate
 *.tfstate.*
@@ -7,6 +7,14 @@
 plan.txt
 *.tfvars
 !terraform.tfvars.example
+# Backend config — backend.tf and backend.hcl are user-enabled after the
+# first apply creates the state container. Only the .example templates
+# are committed; a fresh checkout has no backend.tf and defaults to local
+# state, which is what we want during bootstrap.
+backend.tf
+!backend.tf.example
+backend.hcl
+!backend.hcl.example
 crash.log
 crash.*.log
 override.tf

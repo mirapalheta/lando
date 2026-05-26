@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,7 +16,7 @@ jobs:
   # .NET build + test (App)
   # ─────────────────────────────────────────────
   dotnet:
-    name: .NET 10
+    name: Function App (.NET 10)
     runs-on: "ubuntu-latest"
     steps:
       - name: 📦 Checkout

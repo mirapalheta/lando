@@ -49,14 +49,13 @@ FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0
 WORKDIR /home/site/wwwroot
 
 # Install Home Assistant certificate(s) into system trust store.
-# Both args are optional; the conditional install survives empty values
+# Both are optional; the conditional install survives empty values
 # without failing the build.
-ARG HOME_ASSISTANT_CA=""
-ARG HOME_ASSISTANT_CERT=""
-
-RUN [ -n "$HOME_ASSISTANT_CA" ] && printf '%s' "$HOME_ASSISTANT_CA" > /usr/local/share/ca-certificates/home-assistant-ca.crt
-RUN [ -n "$HOME_ASSISTANT_CERT" ] && printf '%s' "$HOME_ASSISTANT_CERT" > /usr/local/share/ca-certificates/home-assistant-cert.crt
-RUN [ -n "$HOME_ASSISTANT_CA" ] || [ -n "$HOME_ASSISTANT_CERT" ] && update-ca-certificates
+RUN --mount=type=secret,id=ha_caf \
+    --mount=type=secret,id=ha_crt \
+    [ -s /run/secrets/ha_caf ] && cp /run/secrets/ha_caf /usr/local/share/ca-certificates/ha_ca.crt; \
+    [ -s /run/secrets/ha_crt ] && cp /run/secrets/ha_crt /usr/local/share/ca-certificates/ha_cert.crt; \
+    { [ -s /run/secrets/ha_caf ] || [ -s /run/secrets/ha_crt ]; } && update-ca-certificates || true
 
 # Copy published app from build stage
 COPY --from=build /app/publish .

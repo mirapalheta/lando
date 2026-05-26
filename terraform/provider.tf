@@ -1,5 +1,11 @@
 terraform {
   required_version = ">= 1.5" # 1.5+ for `import` blocks
+
+  # NOTE: the backend "azurerm" block is intentionally NOT here.
+  # It lives in backend.tf (gitignored), enabled by copying
+  # backend.tf.example after the first apply has created the state container.
+  # See the README's "State management" section for the bootstrap procedure.
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -16,10 +22,6 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"
-    }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "~> 2.4"
     }
   }
 }

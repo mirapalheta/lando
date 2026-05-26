@@ -1,0 +1,31 @@
+# ============================================================================
+# Remote state in Azure Blob Storage — example backend configuration
+# ============================================================================
+# Copy this file to `backend.tf` (gitignored) AFTER the first `terraform apply`
+# has created the storage account and tfstate container. Then:
+#
+#     cp backend.tf.example backend.tf
+#     cp backend.hcl.example backend.hcl   # fill in values
+#     az role assignment create ...        # see README "State management"
+#     terraform init -backend-config=backend.hcl -migrate-state
+#
+# Why this lives in its own file rather than inside provider.tf:
+# the very first `terraform init` on a fresh checkout has to use the local
+# backend because the Azure storage account doesn't exist yet. Keeping the
+# backend block in a gitignored file means a fresh checkout's first
+# `terraform init` cleanly defaults to local state — no `-backend=false` hack,
+# no commenting-out dance.
+#
+# use_azuread_auth forces the backend to authenticate with Entra ID (the
+# identity from `az login`) instead of the storage account's shared key.
+# This is intentional — the shared key still exists because the Tailscale
+# file-share mount needs it, but the backend never touches it.
+# ============================================================================
+
+terraform {
+  backend "azurerm" {
+    use_azuread_auth = true
+    # Concrete resource_group_name / storage_account_name / container_name / key
+    # come from backend.hcl via `terraform init -backend-config=backend.hcl`.
+  }
+}

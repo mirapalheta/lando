@@ -1,62 +1,173 @@
-# Copy this file to terraform.tfvars and fill in your actual values
-# terraform.tfvars is gitignored for security
+# Copy this file to terraform.tfvars and fill in your actual values.
+# terraform.tfvars is gitignored — never commit secrets.
+#
+# Legend:
+#   REQUIRED — must be set; terraform plan/apply will fail without it
+#   Optional — has a sensible default; uncomment to override
+#
+# Resource names for both Azure and AWS are derived automatically from
+# project_name + location. To see what will be created, run:
+#   terraform plan -var-file=terraform.tfvars
 
-# REQUIRED: Your Azure subscription ID
-subscription_id = "your-subscription-id-here"
+# =========================================================================
+# Shared / Global
+# =========================================================================
 
-# Optional: Project name for resource naming (default: "lando")
-# project_name = "myproject"
+# Optional: Base name used in every resource name across both clouds.
+# Changing this renames everything — plan carefully before modifying.
+# Default: "lando"
+# project_name = "lando"
 
-# Optional: Azure region (default: "centralus")
-# location = "westus2"
+# Optional: Common tags applied to all taggable resources.
+# tags = {
+#   Environment = "prod"
+#   ManagedBy   = "Terraform"
+#   Project     = "lando"
+# }
 
-# REQUIRED: Home Assistant token from your HA instance
+# Optional: Maximum clock skew (seconds) tolerated when validating HMAC
+# timestamps between the Alexa Lambda and the Azure Function.
+# Lower = more replay-resistant; higher = more forgiving of clock drift.
+# Default: 300  (matches Slack/Stripe webhook conventions)
+# hmac_max_clock_skew_seconds = 300
+
+# =========================================================================
+# Azure — Core
+# =========================================================================
+
+# REQUIRED: Azure subscription that owns all Azure resources.
+subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Optional: Azure region for all Azure resources.
+# Default: "centralus"
+# location = "centralus"
+
+# REQUIRED: Docker image tag to deploy. Drives both `docker build` (in
+# azure-app-build.tf) and the Container App image reference.
+image_tag = "0.0.0"
+
+# =========================================================================
+# Home Assistant
+# =========================================================================
+
+# REQUIRED: URL of your Home Assistant instance reachable from the container.
+home_assistant_base_url = "https://your-ha-domain:8123"
+
+# REQUIRED: Long-lived access token generated in your HA user profile.
 home_assistant_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 
-# REQUIRED: Home Assistant certificate - base64 encoded, NO PEM headers/footers
-# Extract with: cat cert.pem | sed '/-----/d' | tr -d '\n'
-home_assistant_certificate = "MIIDazCCAlOgAwIBAgIUI..."
-
-# Optional: Tailscale API key (for future use)
-# tailscale_auth_key = ""
-
-# Optional: Home Assistant base URL (required for the function to work)
-# home_assistant_base_url = "https://your-ha-domain:port"
-
-# Optional: App Service Plan SKU (default: "B1")
-# Options: "B1" (always-on), "FC1" (flex consumption), "Y1" (deprecated consumption)
-# app_service_plan_sku = "B1"
-
-# Optional: Docker image tag for Function App (default: "0.1.0")
-# Specify which Docker image version to deploy from Azure Container Registry
-# function_app_image_tag = "0.1.2"
-
-# Optional: Custom resource names (auto-generated if not specified)
-# resource_group_name = "rg-myproject-westus2"
-# storage_account_name = "stmyprojectwestus2"
-# key_vault_name = "kv-myproject-westus2"
-# app_service_plan_name = "asp-myproject-westus2"
-# function_app_name = "func-myproject-westus2"
-# app_insights_name = "myproject-insights"
+# Optional: RUNTIME certificate for .NET HttpClient TLS validation.
+# Base64-encoded DER/PEM with NO headers/footers — stored in Key Vault.
+# Extract from a PEM file with: cat cert.pem | sed '/-----/d' | tr -d '\n'
+# home_assistant_certificate = "MIIDazCCAlOgAwIBAgIUI..."
 
 # =========================================================================
-# AWS / Alexa Lambda proxy
+# Home Assistant — BUILD-TIME trust-store certificates
 # =========================================================================
-
-# REQUIRED: Alexa Smart Home skill ID — used to lock the Lambda permission to
-# *this* skill. Format: amzn1.ask.skill.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-alexa_smart_home_skill_id = "amzn1.ask.skill.9193d4d3-b254-44ed-aba3-68bdef4ea251"
-
-# Optional overrides (defaults are usually correct):
-# aws_region                      = "us-east-1"
-# alexa_lambda_log_retention_days = 30
-# alexa_lambda_memory_mb          = 256
-# alexa_lambda_timeout_seconds    = 15
-# hmac_max_clock_skew_seconds     = 300
+# PEM files baked into the container's OS trust store via BuildKit secrets
+# during `docker build`. Distinct from home_assistant_certificate above,
+# which is the runtime cert passed to the .NET HttpClient.
 #
-# AWS resource names are built from var.project_name (default "lando"):
-#   Lambda  → lambda-lando-alexa-proxy
-#   Role    → role-lando-alexa-proxy
-#   Policy  → policy-lando-hmac-secret-read
-#   Secret  → lando/hmac/shared-secret
-# Change them by setting project_name above (affects Azure names too).
+# Paths are resolved relative to lando/terraform/. Leave commented out if
+# your HA instance uses a publicly-trusted certificate.
+
+# Optional: CA bundle to add to the container's OS trust store at build time.
+# home_assistant_ca_file = "your-ca.pem"
+
+# Optional: Host certificate to add to the container's OS trust store at build time.
+# home_assistant_cert_file = "your-host.pem"
+
+# =========================================================================
+# Tailscale
+# =========================================================================
+
+# Optional: Reusable pre-auth key for automatic Tailscale device enrollment.
+# Generate at https://login.tailscale.com/admin/settings/keys
+# tailscale_auth_key = "tskey-auth-..."
+
+# Optional: Accept DNS configuration pushed from the Tailscale admin console
+# (enables MagicDNS). Default: true
+# tailscale_accept_dns = true
+
+# =========================================================================
+# Alexa Smart Home — OAuth (inbound token validation, Azure-side)
+# =========================================================================
+# These credentials validate bearer tokens Alexa sends on every Smart Home
+# directive. Find them in the Alexa Developer Console under your skill's
+# Permissions tab.
+
+# REQUIRED: Login-with-Amazon client_id; used as the pinned `aud` value when
+# validating inbound Alexa bearer tokens. No network calls required.
+# Format: amzn1.application-oa2-client.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+alexa_smart_home_auth_client_id = "amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Optional: LwA client secret paired with auth_client_id. Stored in Key
+# Vault. Provide if your token validation strategy requires it.
+# alexa_smart_home_auth_client_secret = ""
+
+# =========================================================================
+# Alexa Smart Home — OAuth (Event Gateway, proactive state reports)
+# =========================================================================
+# Used for the AcceptGrant code exchange and ongoing access-token refresh
+# so the bridge can send proactive events to the Alexa Event Gateway.
+
+# Optional: LwA client_id for the Alexa Event Gateway.
+# Format: amzn1.application-oa2-client.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# alexa_smart_home_event_client_id = "amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Optional: LwA client secret paired with event_client_id. Stored in Key Vault.
+# alexa_smart_home_event_client_secret = ""
+
+# =========================================================================
+# Azure Container App — runtime (optional overrides)
+# =========================================================================
+
+# Optional: Port the .NET application listens on inside the container.
+# Default: 80
+# app_port = 80
+
+# Optional: Port the Tailscale SOCKS5 proxy listens on.
+# Default: 1055
+# socks5_port = 1055
+
+# Optional: Port used to health-check the SOCKS5 proxy sidecar.
+# Default: 9002
+# proxy_health_check_port = 9002
+
+# Optional: Tailscale hostname strategy.
+# "container_app" → use the full Container App name (default)
+# "project_name"  → use project_name
+# any other value → use that string verbatim
+# hostname = "container_app"
+
+# =========================================================================
+# AWS — Alexa Smart Home Lambda proxy
+# =========================================================================
+# The Lambda acts as the Alexa Smart Home endpoint and forwards directives
+# to the Azure Function over HMAC-signed HTTP. AWS resource names are
+# derived from project_name:
+#   Lambda function → lambda-{project_name}-alexa-smart-home
+#   IAM role        → role-{project_name}-alexa-smart-home
+#   IAM policy      → policy-{project_name}-hmac-secret-read
+#   Secrets Manager → {project_name}/hmac/shared-secret
+
+# REQUIRED: Alexa Smart Home skill ID that is allowed to invoke the Lambda.
+# Sets lambda:EventSourceToken on the resource-based policy.
+# Format: amzn1.ask.skill.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+alexa_smart_home_skill_id = "amzn1.ask.skill.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Optional: AWS region for the Lambda. Alexa Smart Home (North America)
+# requires us-east-1. Default: "us-east-1"
+# aws_region = "us-east-1"
+
+# Optional: CloudWatch log retention for the Lambda. Default: 30 (days)
+# alexa_smart_home_log_retention_days = 30
+
+# Optional: Lambda memory allocation. 256 MB gives faster cold starts than
+# 128 MB at negligible extra cost for this request volume. Default: 256
+# alexa_smart_home_memory_mb = 256
+
+# Optional: Lambda execution timeout. Alexa Smart Home requires a sub-8s
+# end-to-end response; 15s leaves headroom for cold-start + Azure latency.
+# Default: 15 (seconds)
+# alexa_smart_home_timeout_seconds = 15
