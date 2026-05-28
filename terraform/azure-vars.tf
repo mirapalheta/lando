@@ -14,8 +14,8 @@ variable "location" {
   default     = "centralus"
 }
 
-variable "image_tag" {
-  description = "Docker image tag (defaults to latest git tag if not specified)"
+variable "app_version" {
+  description = "Version being deployed; used for tagging and labeling resources."
   type        = string
 }
 
@@ -83,6 +83,12 @@ variable "tailscale_accept_dns" {
   default     = true
 }
 
+variable "tailscale_version" {
+  description = "Tailscale version for the gateway sidecar (e.g., 'v1.98.3' or 'latest')"
+  type        = string
+  default     = "latest"
+}
+
 # ----------------------------------------
 # Alexa OAuth (Login with Amazon) — used by Azure-side bearer-token validation
 # ----------------------------------------
@@ -138,4 +144,75 @@ variable "hostname" {
   description = "Tailscale hostname. Use 'container_app' for full container app name, 'project_name' for project name, or provide a custom hostname"
   type        = string
   default     = "container_app"
+}
+
+# ----------------------------------------
+# Shared GitHub Actions identity (optional)
+# ----------------------------------------
+# When provided, lando will NOT create its own sp-lando-github-actions app/SP.
+# Instead, the shared identity receives the same RBAC grants (Contributor,
+# User Access Administrator, Storage Blob Data Contributor, Key Vault Secrets
+# Officer, AcrPush) scoped to lando resources.
+#
+# Leave empty (default) when using lando/terraform as a standalone root — it
+# will create a dedicated sp-lando-github-actions service principal.
+
+variable "github_actions_identity_id" {
+  description = "Object ID of an externally-managed GitHub Actions service principal. When set, lando skips creating sp-lando-github-actions and grants this identity the RBAC roles instead. Leave empty for standalone usage."
+  type        = string
+  default     = ""
+}
+
+# ----------------------------------------
+# Shared Container Registry (optional)
+# ----------------------------------------
+# When provided, lando skips creating its own ACR. Supply the full object or
+# leave null (default) for standalone usage.
+
+variable "container_registry" {
+  description = "Externally-managed ACR. When non-null, lando skips creating its own registry. Leave null for standalone usage."
+  type = object({
+    id             = string
+    name           = string
+    login_server   = string
+    admin_username = string
+    admin_password = string
+  })
+  default   = null
+  sensitive = true
+}
+
+# ----------------------------------------
+# Shared Key Vault (optional)
+# ----------------------------------------
+# When provided, lando writes secrets into this vault instead of creating its own.
+# Leave null (default) for standalone usage.
+
+variable "key_vault" {
+  description = "Externally-managed Key Vault. When non-null, lando skips creating its own. Leave null for standalone usage."
+  type = object({
+    id  = string
+    uri = string
+  })
+  default = null
+}
+
+# ----------------------------------------
+# Shared app storage account (optional)
+# ----------------------------------------
+# When provided, lando skips creating its own storage account and places the
+# Tailscale file share inside this one instead.
+# Leave null (default) for standalone usage.
+
+variable "storage_account" {
+  description = "Externally-managed storage account for app file shares. When non-null, lando skips creating its own. Leave null for standalone usage."
+  type = object({
+    id                   = string
+    name                 = string
+    access_key           = string
+    connection_string    = string
+    tfstate_container_id = string
+  })
+  default   = null
+  sensitive = true
 }

@@ -2,6 +2,39 @@
 
 Get Lando up and running in about 15 minutes.
 
+## Required tools
+
+Install these before anything else. The table shows the **minimum** version
+and where each tool is used. Install commands use [Homebrew](https://brew.sh).
+
+| Tool                                                                                                      | Min version | Used for                                                                | Install                                                                 |
+| --------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [.NET SDK](https://dotnet.microsoft.com/download)                                                         | **10**      | Azure Function App build & test                                         | `brew install --cask dotnet-sdk`                                        |
+| [Node.js](https://nodejs.org/)                                                                            | **26**      | AWS Lambda build & test                                                 | `brew install node@26`                                                  |
+| [Terraform](https://developer.hashicorp.com/terraform/install)                                            | **1.5**     | Provision Azure + AWS infrastructure                                    | `brew install terraform`                                                |
+| [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)                                | any recent  | Authenticate Terraform's `azurerm` provider                             | `brew install azure-cli`                                                |
+| [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)                  | v2          | Authenticate Terraform's `aws` provider                                 | `brew install awscli`                                                   |
+| [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local) | v4          | Run the Function App locally (`func start`)                             | `brew tap azure/functions && brew install azure-functions-core-tools@4` |
+| [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)                     | any         | Local Azure Storage emulator (required by Functions host)               | `brew install azurite`                                                  |
+| [Docker](https://www.docker.com/products/docker-desktop/)                                                 | any         | Build & run the container image locally                                 | `brew install --cask docker`                                            |
+| [GitHub CLI (`gh`)](https://cli.github.com/)                                                              | any         | Wire Terraform outputs to GitHub Actions secrets/variables after deploy | `brew install gh`                                                       |
+
+> **Diagram rendering** (contributors only) — `scripts/render-diagrams.sh`
+> additionally needs `plantuml` (`brew install plantuml`) and the draw.io
+> desktop app (`brew install --cask drawio`).
+
+### Background knowledge that helps
+
+You don't need to be an expert in all of these, but a working familiarity goes a long way:
+
+- **Terraform** — reading HCL, understanding `plan`/`apply`, provider authentication, state
+- **Azure** — Container Apps, Azure Functions, Key Vault, Container Registry, Managed Identity
+- **AWS** — Lambda, Secrets Manager, IAM roles & policies
+- **Tailscale** — ACL tags, auth keys, subnet routing
+- **.NET / C#** — dependency injection, `IHostedService`, Azure Functions v4 isolated model
+- **TypeScript / Node.js** — ES modules, the AWS Lambda handler contract, `node --test`
+- **Home Assistant** — long-lived access tokens, REST API, WebSocket API, entity domains
+
 ## Prerequisites
 
 Before starting, make sure you have:

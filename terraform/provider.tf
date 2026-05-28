@@ -43,9 +43,6 @@ provider "azurerm" {
   }
 }
 
-provider "azuread" {
-}
-
 provider "aws" {
   region = var.aws_region
 }

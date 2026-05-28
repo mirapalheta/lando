@@ -1,33 +1,31 @@
 # ========================================
-# Storage — Azure Storage account, Tailscale state file share, Terraform state container
+# Storage — app file shares (Tailscale state)
 # ========================================
-# This storage account hosts two things:
-#   1. The Tailscale state file share — mounted into the Tailscale gateway sidecar
-#      (see azure-app.tf) so it preserves device identity across Container App restarts.
-#   2. The Terraform state blob — see "tfstate" container below and the
-#      backend "azurerm" block in provider.tf.
+# When var.storage_account is provided (non-null), the storage account is
+# managed externally and lando skips creating its own. The Tailscale file share
+# is still created here (it's app-specific) but lives inside the shared account.
 #
-# Because the Tailscale file-share mount authenticates with the storage account
-# access key (Container Apps file-share mounts don't support managed identity),
-# shared_access_key_enabled MUST remain true. The Terraform backend itself
-# authenticates via Entra ID (use_azuread_auth = true in provider.tf) so it
-# never touches the shared key.
+# Standalone lando usage: leave var.storage_account null (default) and lando
+# creates its own storage account.
+#
+# The tfstate container and its RBAC below are retained for standalone mode only.
 
 resource "azurerm_storage_account" "lando" {
+  count                    = local.storage_account_count
   name                     = local.names.storage_account
   resource_group_name      = azurerm_resource_group.lando.name
   location                 = azurerm_resource_group.lando.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  tags                     = var.tags
+  tags                     = local.tags
 
   min_tls_version                 = "TLS1_2"
   https_traffic_only_enabled      = true
   allow_nested_items_to_be_public = false
 
-  # Blob versioning + soft delete protect the Terraform state blob against
-  # corruption, accidental deletion, or a bad `terraform apply` overwriting
-  # state with garbage. 30 days is a reasonable recovery window.
+  # Container Apps file-share mounts authenticate with the access key.
+  shared_access_key_enabled = true
+
   blob_properties {
     versioning_enabled = true
 
@@ -41,9 +39,6 @@ resource "azurerm_storage_account" "lando" {
   }
 
   lifecycle {
-    # Destroying this storage account would also destroy the Terraform state
-    # blob — i.e. Terraform's own memory of the rest of the stack. Removing
-    # this guard requires a deliberate two-step (comment out, plan, apply).
     prevent_destroy = true
 
     ignore_changes = [
@@ -52,19 +47,38 @@ resource "azurerm_storage_account" "lando" {
   }
 }
 
+locals {
+  storage_account_count = var.storage_account == null ? 1 : 0
+  storage_account = {
+    id                = nonsensitive(try(var.storage_account.id, azurerm_storage_account.lando[0].id))
+    name              = nonsensitive(try(var.storage_account.name, azurerm_storage_account.lando[0].name))
+    access_key        = try(var.storage_account.access_key, azurerm_storage_account.lando[0].primary_access_key)
+    connection_string = try(var.storage_account.connection_string, azurerm_storage_account.lando[0].primary_connection_string)
+  }
+  tfstate_container_id = try(var.storage_account.tfstate_container_id, azurerm_storage_container.tfstate[0].id)
+}
+
+# Tailscale gateway sidecar persists device identity across Container App
+# restarts using this file share.
 resource "azurerm_storage_share" "tailscale_state" {
   name               = "tailscale-state"
-  storage_account_id = azurerm_storage_account.lando.id
+  storage_account_id = local.storage_account.id
   quota              = 1 # 1GB is more than enough for Tailscale state files
 
   depends_on = [azurerm_storage_account.lando]
 }
 
-# Container that holds the Terraform state blob. Referenced from
-# backend.hcl as container_name = "tfstate".
+# ----------------------------------------
+# Standalone-mode Terraform state resources
+# ----------------------------------------
+# The container and RBAC below are only created when lando manages its own
+# storage account (standalone mode). When the account is provided externally,
+# Terraform state is managed outside this module and these are skipped.
+
 resource "azurerm_storage_container" "tfstate" {
+  count                 = local.storage_account_count
   name                  = "tfstate"
-  storage_account_id    = azurerm_storage_account.lando.id
+  storage_account_id    = local.storage_account.id
   container_access_type = "private"
 
   lifecycle {
@@ -72,51 +86,24 @@ resource "azurerm_storage_container" "tfstate" {
   }
 }
 
-# Grants the identity running Terraform (whoever is `az login`'d, or the
-# service principal in CI) write access to the state container. Without this,
-# `terraform init -migrate-state` would fail with a 403 on the first push to
-# the remote backend because the storage account has shared_access_key_enabled
-# pinned via ignore_changes — the backend authenticates via Entra ID only.
-#
-# Requires the principal applying this stack to hold `User Access Administrator`
-# or `Owner` on the subscription (in addition to the Contributor rights needed
-# to create everything else). Personal Azure accounts have this by default;
-# corporate subscriptions may not.
 resource "azurerm_role_assignment" "tfstate_admin" {
-  scope                = azurerm_storage_container.tfstate.id
+  count                = local.storage_account_count
+  scope                = local.tfstate_container_id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = data.azurerm_client_config.current.object_id
 
   description = "Allows the Terraform-running identity to read and write the Lando state blob over Entra ID auth (use_azuread_auth)."
 
   lifecycle {
-    # principal_id resolves to "whoever is running `terraform apply` right
-    # now" — which alternates between the human (local apply) and the
-    # GitHub Actions SP (CI apply). Without ignore_changes, each apply
-    # would delete-and-recreate this assignment to flip it to the new
-    # principal, locking out the identity that didn't apply last.
-    #
-    # By ignoring drift on principal_id we lock in whoever bootstrapped
-    # the stack (the human's first apply), and let the SP get its own
-    # separate grant via github_actions_tfstate_data below. Net result:
-    # both identities keep their access permanently across alternating
-    # applies.
     ignore_changes = [principal_id]
   }
 }
 
-# Mirrors tfstate_admin above, but for the GitHub Actions service principal
-# (see azure-identity.tf). Required so the CI deploy can read and write the
-# state blob via the Entra ID auth path. Without this, `terraform init` from
-# CI fails with 403 AuthorizationPermissionMismatch on the first blob listing.
-#
-# The github_actions SP already has Contributor on the resource group
-# (control-plane), but that role doesn't grant data-plane permissions on
-# blob containers. Storage Blob Data Contributor is the data-plane equivalent.
 resource "azurerm_role_assignment" "github_actions_tfstate_data" {
-  scope                = azurerm_storage_container.tfstate.id
+  count                = max(local.github_actions_count, local.storage_account_count)
+  scope                = local.tfstate_container_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azuread_service_principal.github_actions.object_id
+  principal_id         = local.github_actions.id
 
   description = "Allows the GitHub Actions deploy SP to read and write the Lando state blob over Entra ID auth (use_azuread_auth)."
 }

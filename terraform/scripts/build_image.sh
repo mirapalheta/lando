@@ -48,10 +48,8 @@ fi
 #    are mounted via BuildKit --secret (file paths, not contents), so
 #    there's nothing multi-line to serialize through env any more.
 
-# Run git from inside SOURCE_PATH so that, when SOURCE_PATH lives inside a
-# submodule (lando/ in this repo), we report the *submodule's* HEAD — which
-# is what's actually getting built — and detect dirtiness in the submodule's
-# working tree rather than the superrepo's.
+# Run git from inside SOURCE_PATH so that we report the HEAD of the directory
+# being built and detect dirtiness
 COMMIT="$(git -C "$SOURCE_PATH" rev-parse --short=8 HEAD)"
 
 # `--porcelain .` covers both staged and unstaged changes AND untracked

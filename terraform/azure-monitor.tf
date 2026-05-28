@@ -14,7 +14,7 @@ resource "azurerm_log_analytics_workspace" "lando" {
   resource_group_name = azurerm_resource_group.lando.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
-  tags                = var.tags
+  tags                = local.tags
 }
 
 resource "azurerm_application_insights" "lando" {
@@ -23,7 +23,7 @@ resource "azurerm_application_insights" "lando" {
   resource_group_name = azurerm_resource_group.lando.name
   application_type    = "web"
   workspace_id        = azurerm_log_analytics_workspace.lando.id
-  tags                = var.tags
+  tags                = local.tags
 }
 
 # ----------------------------------------
@@ -34,7 +34,7 @@ resource "azurerm_monitor_action_group" "lando" {
   name                = local.names.monitor_action_group
   resource_group_name = azurerm_resource_group.lando.name
   short_name          = local.names.monitor_action_group_short
-  tags                = var.tags
+  tags                = local.tags
 }
 
 # ----------------------------------------
@@ -52,8 +52,9 @@ resource "azurerm_monitor_diagnostic_setting" "container_app" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "key_vault" {
+  count                      = local.key_vault_count
   name                       = "${local.names.diagnostic_settings}-kv"
-  target_resource_id         = azurerm_key_vault.lando.id
+  target_resource_id         = local.key_vault.id
   log_analytics_workspace_id = azurerm_log_analytics_workspace.lando.id
 
   enabled_log {

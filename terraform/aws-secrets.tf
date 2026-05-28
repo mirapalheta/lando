@@ -12,7 +12,7 @@ resource "aws_secretsmanager_secret" "hmac_shared_secret" {
   description = "HMAC-SHA256 shared secret. Read by ${local.names.lambda_alexa_smart_home} Lambda, mirrored to Azure Key Vault for the Container App verifier."
 
   recovery_window_in_days = 7
-  tags                    = var.tags
+  tags                    = local.tags
 }
 
 resource "aws_secretsmanager_secret_version" "hmac_shared_secret" {

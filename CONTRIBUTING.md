@@ -26,7 +26,7 @@ dotnet build
 # Run all tests
 dotnet test
 
-# AWS Lambda proxy (Node 24 required)
+# AWS Lambda proxy (Node 26 required)
 cd src/aws/lando-alexa-smart-home
 npm ci
 npm test
@@ -78,9 +78,7 @@ The PR template will remind you, but the key points are:
 - `dotnet build` produces zero warnings at the `TreatWarningsAsErrors` level
   (enforced in `Directory.Build.props`).
 - New public APIs have XML documentation comments.
-- No personal hostnames, IPs, account IDs, or resource names introduced (see
-  [docs/internal/scrub-manifest.md](docs/internal/scrub-manifest.md) if you
-  have access to the private superrepo).
+- No personal hostnames, IPs, account IDs, or resource names introduced.
 
 ## Adding a new Home Assistant device type
 

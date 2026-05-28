@@ -13,7 +13,7 @@ resource "azurerm_container_app_environment" "lando" {
   location                   = azurerm_resource_group.lando.location
   resource_group_name        = azurerm_resource_group.lando.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.lando.id
-  tags                       = var.tags
+  tags                       = local.tags
 
   depends_on = [azurerm_resource_group.lando]
 }
@@ -21,11 +21,11 @@ resource "azurerm_container_app_environment" "lando" {
 # Register the storage account with the environment so the Tailscale sidecar
 # can mount the file share defined in azure-storage.tf.
 resource "azurerm_container_app_environment_storage" "lando" {
-  name                         = local.names.storage_account
+  name                         = local.storage_account.name
+  account_name                 = local.storage_account.name
+  access_key                   = local.storage_account.access_key
   container_app_environment_id = azurerm_container_app_environment.lando.id
-  account_name                 = azurerm_storage_account.lando.name
   share_name                   = azurerm_storage_share.tailscale_state.name
-  access_key                   = azurerm_storage_account.lando.primary_access_key
   access_mode                  = "ReadWrite"
 }
 
@@ -41,10 +41,10 @@ resource "azurerm_container_app" "lando" {
   max_inactive_revisions       = 100
   # Merge the effective image tag in so the deployed version is visible
   # in the Azure Portal without having to inspect a revision's container
-  # spec. Tracks terraform_data.image_state.output, so it updates only
+  # spec. Tracks terraform_data.image_tag.output, so it updates only
   # when source files actually change (same trigger as the build itself).
-  tags = merge(var.tags, {
-    Version = terraform_data.image_state.output
+  tags = merge(local.tags, {
+    Version = terraform_data.image_tag.output
   })
 
   identity {
@@ -61,7 +61,7 @@ resource "azurerm_container_app" "lando" {
     # across Container App restarts and updates.
     volume {
       name         = "tailscale-state"
-      storage_name = azurerm_storage_account.lando.name
+      storage_name = local.storage_account.name
       storage_type = "AzureFile"
     }
 
@@ -90,11 +90,11 @@ resource "azurerm_container_app" "lando" {
     # Bare minimum allocation: Workload is I/O-bound (HTTP to Home Assistant), not CPU-intensive
     container {
       name = "app"
-      # Use the effective tag persisted in terraform_data.image_state.output,
-      # not var.image_tag directly. Bumping var.image_tag without changing
+      # Use the effective tag persisted in terraform_data.image_tag.output,
+      # not var.app_version directly. Bumping var.app_version without changing
       # source code is a no-op; the container app keeps pointing at the
       # image that was actually built for the current sources.
-      image  = "${azurerm_container_registry.lando.login_server}/${var.project_name}:${terraform_data.image_state.output}"
+      image  = "${local.container_registry.login_server}/${var.project_name}:${terraform_data.image_tag.output}"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -125,7 +125,7 @@ resource "azurerm_container_app" "lando" {
 
       env {
         name  = "KEY_VAULT_URI"
-        value = azurerm_key_vault.lando.vault_uri
+        value = local.key_vault.uri
       }
 
       env {
@@ -208,7 +208,7 @@ resource "azurerm_container_app" "lando" {
     # https://tailscale.com/docs/features/containers/docker/docker-params
     container {
       name   = "gateway"
-      image  = "tailscale/tailscale:latest"
+      image  = "tailscale/tailscale:${var.tailscale_version}"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -314,14 +314,14 @@ resource "azurerm_container_app" "lando" {
   # Registry configuration for ACR authentication
   # Using admin credentials since managed identity approach is unreliable with Container Apps
   registry {
-    server               = azurerm_container_registry.lando.login_server
-    username             = azurerm_container_registry.lando.admin_username
+    server               = local.container_registry.login_server
+    username             = local.container_registry.admin_username
     password_secret_name = local.secret_names_map.AcrAdminPassword
   }
 
   secret {
     name  = local.secret_names_map.AcrAdminPassword
-    value = azurerm_container_registry.lando.admin_password
+    value = local.container_registry.admin_password
   }
 
   secret {
@@ -335,13 +335,13 @@ resource "azurerm_container_app" "lando" {
     content {
       name                = secret.value
       identity            = azurerm_user_assigned_identity.lando.id
-      key_vault_secret_id = "${azurerm_key_vault.lando.vault_uri}secrets/${secret.value}"
+      key_vault_secret_id = "${local.key_vault.uri}secrets/${secret.value}"
     }
   }
 
   secret {
     name  = local.secret_names_map.StorageConnectionString
-    value = azurerm_storage_account.lando.primary_connection_string
+    value = local.storage_account.connection_string
   }
 
   depends_on = [

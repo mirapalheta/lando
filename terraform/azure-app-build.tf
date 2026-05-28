@@ -14,7 +14,7 @@
 #    Used as a trigger so terraform re-runs the build when (and only when)
 #    the .NET sources, project files, Dockerfile, or .dockerignore change.
 locals {
-  source_path = "${path.module}/../src/azure"
+  source_path = abspath("${path.module}/../src/azure")
   docker_file = "${local.source_path}/Lando.FunctionApp/Dockerfile"
 
   # Files that contribute to code_base_hash. `**/*.cs` would otherwise
@@ -38,15 +38,15 @@ locals {
 # 2. Persist the "effective" image tag in Terraform state.
 #    - triggers_replace fires only when code_base_hash changes, so a code
 #      change destroys/creates this resource and `input` is re-evaluated
-#      against the current var.image_tag at that moment.
+#      against the current var.app_version at that moment.
 #    - ignore_changes = [input] suppresses in-place updates, so bumping
-#      var.image_tag with no source change is a no-op: `output` keeps
+#      var.app_version with no source change is a no-op: `output` keeps
 #      returning the tag that was captured the last time the code changed.
 #    Net effect: `output` is the tag of the image that actually corresponds
 #    to whatever is currently in src/. Downstream consumers (container app,
-#    build provisioner) read it instead of var.image_tag directly.
-resource "terraform_data" "image_state" {
-  input            = var.image_tag
+#    build provisioner) read it instead of var.app_version directly.
+resource "terraform_data" "image_tag" {
+  input            = var.app_version
   triggers_replace = [local.code_base_hash]
 
   lifecycle {
@@ -55,22 +55,23 @@ resource "terraform_data" "image_state" {
 }
 
 # 3. Build, publish, or fail based on the rules in build_image.sh.
-#    Keyed on terraform_data.image_state.id — the only way this resource
-#    is replaced is when image_state is replaced, which only happens when
+#    Keyed on terraform_data.image_tag.id — the only way this resource
+#    is replaced is when image_tag is replaced, which only happens when
 #    source files change. Tag-only bumps no longer re-trigger the build.
 resource "null_resource" "acr_image_build" {
   triggers = {
-    state_id = terraform_data.image_state.id
+    state_id = terraform_data.image_tag.id
   }
 
   provisioner "local-exec" {
-    command = "./scripts/build_image.sh"
+    command     = "./scripts/build_image.sh"
+    working_dir = path.module
 
     # Pass Terraform variables safely into the shell environment so the
     # script doesn't have to know anything about Terraform.
     environment = {
-      REGISTRY_NAME = azurerm_container_registry.lando.name
-      IMAGE_TAG     = terraform_data.image_state.output
+      REGISTRY_NAME = local.container_registry.name
+      IMAGE_TAG     = terraform_data.image_tag.output
       IMAGE_NAME    = var.project_name
       DOCKER_FILE   = local.docker_file
       SOURCE_PATH   = local.source_path

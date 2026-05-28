@@ -28,7 +28,7 @@ resource "aws_iam_role" "alexa_smart_home" {
     }]
   })
 
-  tags = var.tags
+  tags = local.tags
 }
 
 # CloudWatch Logs write permission (AWS-managed policy).
@@ -60,7 +60,7 @@ resource "aws_iam_role_policy" "alexa_smart_home_secrets_read" {
 resource "aws_cloudwatch_log_group" "alexa_smart_home" {
   name              = "/aws/lambda/${local.names.lambda_alexa_smart_home}"
   retention_in_days = var.alexa_smart_home_log_retention_days
-  tags              = var.tags
+  tags              = local.tags
 }
 
 # ----------------------------------------
@@ -99,13 +99,23 @@ resource "aws_lambda_function" "alexa_smart_home" {
     log_group  = aws_cloudwatch_log_group.alexa_smart_home.name
   }
 
-  tags = var.tags
+  tags = merge(local.tags, {
+    Version = terraform_data.lambda_version_tag.output
+  })
+
+  lifecycle {
+    # filename is an absolute path that differs between local and CI environments.
+    # source_code_hash is the actual change-detection mechanism; the provider only
+    # reads filename when it needs to upload a new zip (i.e. when the hash changes).
+    ignore_changes = [filename]
+  }
 
   depends_on = [
     aws_iam_role_policy_attachment.alexa_smart_home_basic_execution,
     aws_iam_role_policy.alexa_smart_home_secrets_read,
     aws_cloudwatch_log_group.alexa_smart_home,
     null_resource.lambda_build,
+    terraform_data.lambda_version_tag,
   ]
 }
 

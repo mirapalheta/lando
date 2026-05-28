@@ -47,7 +47,7 @@ Edit `terraform.tfvars` with your values. Required fields:
 | `alexa_smart_home_event_client_secret` | Same location                                                |
 | `alexa_smart_home_skill_id`            | Alexa Developer Console → your skill → Skill ID              |
 | `tailscale_auth_key`                   | Tailscale admin console → Settings → Keys (tag: `tag:lando`) |
-| `image_tag`                            | Docker image tag to deploy from ACR, e.g. `0.1.0`            |
+| `app_version`                          | Docker image tag to deploy from ACR, e.g. `0.1.0`            |
 
 Optional:
 
@@ -59,6 +59,7 @@ Optional:
 | `home_assistant_certificate` | _(empty)_   | Base64 CA cert handed to the .NET HttpClient at **runtime** (stored in Key Vault)                                                                    |
 | `home_assistant_ca_file`     | _(empty)_   | Path to a PEM CA bundle baked into the container's OS trust store at **build time**. Path is relative to `lando/terraform/`. Empty = no CA installed |
 | `home_assistant_cert_file`   | _(empty)_   | Path to a PEM cert with the same build-time semantics as `home_assistant_ca_file`                                                                    |
+| `tailscale_version`          | `latest`    | Tailscale gateway sidecar image tag (e.g. `v1.98.3`). `latest` always resolves to the most recent stable release.                                    |
 
 ### 2. Initialise Terraform (first run uses local state)
 
@@ -98,18 +99,18 @@ Vault so the Lambda and container app share the same key automatically.
 | Container Registry (Basic) | `acr{project}{location}`    |
 | Container App Environment  | `cae-{project}-{location}`  |
 | Container App              | `ca-{project}-{location}`   |
-| Log Analytics Workspace    | `log-{project}-{location}`  |
+| Log Analytics Workspace    | `law-{project}-{location}`  |
 | Application Insights       | `appi-{project}-{location}` |
-| User-Assigned Identity     | `id-{project}-{location}`   |
+| User-Assigned Identity     | `uai-{project}-{location}`  |
 
 **AWS**
 
-| Resource               | Name pattern                               |
-| ---------------------- | ------------------------------------------ |
-| Lambda function        | `lambda-{project}-alexa-proxy`             |
-| IAM role               | `role-{project}-alexa-proxy`               |
-| Secrets Manager secret | `{project}/hmac/shared-secret`             |
-| CloudWatch log group   | `/aws/lambda/lambda-{project}-alexa-proxy` |
+| Resource               | Name pattern                                    |
+| ---------------------- | ----------------------------------------------- |
+| Lambda function        | `lambda-{project}-alexa-smart-home`             |
+| IAM role               | `role-{project}-alexa-smart-home`               |
+| Secrets Manager secret | `{project}/hmac/shared-secret`                  |
+| CloudWatch log group   | `/aws/lambda/lambda-{project}-alexa-smart-home` |
 
 ---
 
@@ -121,15 +122,15 @@ in the loop. The previous GitHub Actions workflow is archived under
 
 **Azure Function App image** (`azure-app-build.tf` → `scripts/build_image.sh`):
 
-1. `terraform_data.image_state` holds the **effective image tag** in
+1. `terraform_data.image_tag` holds the **effective image tag** in
    state. It's replaced only when the source-files hash changes, so
-   `var.image_tag` bumps without a code change are no-ops:
-   `terraform_data.image_state.output` keeps returning the tag captured
+   `var.app_version` bumps without a code change are no-ops:
+   `terraform_data.image_tag.output` keeps returning the tag captured
    the last time sources actually changed. The container app reads from
-   `terraform_data.image_state.output`, never `var.image_tag` directly.
+   `terraform_data.image_tag.output`, never `var.app_version` directly.
 2. `null_resource.acr_image_build` is keyed on
-   `terraform_data.image_state.id`, so the build script only runs when
-   sources changed (which is also when a fresh `var.image_tag` is
+   `terraform_data.image_tag.id`, so the build script only runs when
+   sources changed (which is also when a fresh `var.app_version` is
    captured).
 3. When the script runs, it queries ACR (`az acr repository show-tags`)
    and aborts if the tag already exists — bump `image_tag` or delete
@@ -148,7 +149,7 @@ in the loop. The previous GitHub Actions workflow is archived under
    Lambda update decision is computable from sources alone — no
    dependency on `dist/` or the zip existing at plan time.
 2. When the hash changes, `scripts/build_lambda.sh` runs `npm ci && npm
-   run build` and then zips `dist/` straight into the path passed via
+run build` and then zips `dist/` straight into the path passed via
    `$ZIP_PATH` (no separate `archive_file` resource — the trigger is the
    freshness check). The script is unconditional: if it's running,
    sources differ from what produced the last artifacts.
@@ -197,7 +198,7 @@ storage account is hardened with TLS 1.2, blob versioning, and 30-day soft
 delete so state is recoverable from accidental corruption or deletion.
 
 When CI is also wired to run `terraform apply` (see the GitHub Actions
-deploy workflow in the superrepo), the CI service principal gets its own
+deploy workflow), the CI service principal gets its own
 sibling grant — `azurerm_role_assignment.github_actions_tfstate_data`,
 also in `azure-storage.tf`. The human's `tfstate_admin` carries a
 `lifecycle { ignore_changes = [principal_id] }` block so apply never
@@ -391,4 +392,3 @@ az role assignment list \
   --assignee $(terraform output -raw container_app_principal_id) \
   --scope $(terraform output -raw key_vault_id)
 ```
-

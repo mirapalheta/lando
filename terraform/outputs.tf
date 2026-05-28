@@ -16,12 +16,14 @@ output "resource_group_name" {
 
 output "storage_account_id" {
   description = "The ID of the storage account"
-  value       = azurerm_storage_account.lando.id
+  value       = local.storage_account.id
+  sensitive   = true
 }
 
 output "storage_account_name" {
-  description = "The name of the storage account"
-  value       = azurerm_storage_account.lando.name
+  description = "Name of the app storage account"
+  value       = local.storage_account.name
+  sensitive   = true
 }
 
 # ============================================================================
@@ -31,12 +33,12 @@ output "storage_account_name" {
 
 output "key_vault_id" {
   description = "The ID of the Key Vault"
-  value       = azurerm_key_vault.lando.id
+  value       = local.key_vault.id
 }
 
 output "key_vault_uri" {
-  description = "The URI of the Key Vault"
-  value       = azurerm_key_vault.lando.vault_uri
+  description = "Vault URI of the Key Vault"
+  value       = local.key_vault.uri
 }
 
 output "app_insights_id" {
@@ -80,8 +82,8 @@ output "diagnostic_setting_container_app_id" {
 }
 
 output "diagnostic_setting_key_vault_id" {
-  description = "The ID of the Key Vault diagnostic setting"
-  value       = azurerm_monitor_diagnostic_setting.key_vault.id
+  description = "The ID of the Key Vault diagnostic setting (null when KV is externally managed)"
+  value       = try(azurerm_monitor_diagnostic_setting.key_vault[0].id, null)
 }
 
 # output "smart_detector_alert_rule_id" {
@@ -143,46 +145,46 @@ output "user_assigned_identity_principal_id" {
 
 output "container_registry_id" {
   description = "The ID of the Azure Container Registry"
-  value       = azurerm_container_registry.lando.id
+  value       = local.container_registry.id
 }
 
 output "container_registry_name" {
   description = "The name of the Azure Container Registry"
-  value       = azurerm_container_registry.lando.name
+  value       = local.container_registry.name
 }
 
 output "container_registry_login_server" {
   description = "The login server of the Azure Container Registry"
-  value       = azurerm_container_registry.lando.login_server
+  value       = local.container_registry.login_server
 }
 
 output "container_registry_url" {
   description = "The login server URL for the container registry"
-  value       = azurerm_container_registry.lando.login_server
+  value       = local.container_registry.login_server
 }
 
 output "container_registry_username" {
   description = "The admin username for the container registry"
-  value       = azurerm_container_registry.lando.admin_username
+  value       = local.container_registry.admin_username
 }
 
 output "container_registry_password" {
   description = "The admin password for the container registry"
-  value       = azurerm_container_registry.lando.admin_password
+  value       = local.container_registry.admin_password
   sensitive   = true
 }
 
 output "container_app_image_tag" {
-  description = "Effective image tag deployed to the Container App — captured from var.image_tag the last time source files changed and persisted via terraform_data.image_state. Diverges from var.image_tag whenever the tag was bumped without a code change."
-  value       = terraform_data.image_state.output
+  description = "Effective image tag deployed to the Container App — captured from var.app_version the last time source files changed and persisted via terraform_data.image_tag. Diverges from var.app_version whenever the tag was bumped without a code change."
+  value       = terraform_data.image_tag.output
 }
 
 # ============================================================================
 # Azure tenancy + GitHub Actions service principal
 # ============================================================================
-# Consumed by scripts/setup-github-secrets.sh and pushed into GitHub as
-# AZURE_CLIENT_ID / AZURE_CLIENT_SECRET / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID
-# for the azure/login@v3 step in the workflow.
+# Push into GitHub as AZURE_CLIENT_ID / AZURE_CLIENT_SECRET / AZURE_TENANT_ID /
+# AZURE_SUBSCRIPTION_ID for the azure/login@v3 step in the workflow.
+# See deployment.md § "Set GitHub Secrets and Variables" for the full command list.
 
 output "azure_subscription_id" {
   description = "Azure subscription ID"
@@ -195,19 +197,19 @@ output "azure_tenant_id" {
 }
 
 output "github_actions_client_id" {
-  description = "Client ID for GitHub Actions service principal"
-  value       = azuread_application.github_actions.client_id
+  description = "Client ID for GitHub Actions service principal. Empty when github_actions_identity_id is provided (identity is managed externally)."
+  value       = local.github_actions.client_id
 }
 
 output "github_actions_client_secret" {
-  description = "Client secret for GitHub Actions service principal"
-  value       = azuread_service_principal_password.github_actions.value
+  description = "Client secret for GitHub Actions service principal. Empty when github_actions_identity_id is provided (password is managed externally)."
+  value       = local.github_actions.client_secret
   sensitive   = true
 }
 
 output "github_actions_service_principal_object_id" {
-  description = "Object ID of the GitHub Actions service principal"
-  value       = azuread_service_principal.github_actions.object_id
+  description = "Object ID of the GitHub Actions service principal (local or external)."
+  value       = local.github_actions.id
 }
 
 # ============================================================================
@@ -237,9 +239,9 @@ output "aws_account_id" {
 # ============================================================================
 # AWS GitHub Actions IAM deploy user
 # ============================================================================
-# Consumed by scripts/setup-github-secrets.sh and pushed into GitHub as
-# AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY secrets. Mirrors the Azure SP
-# pattern (github_actions_client_id / github_actions_client_secret).
+# Push into GitHub as AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY secrets.
+# Mirrors the Azure SP pattern (github_actions_client_id / github_actions_client_secret).
+# See deployment.md § "Set GitHub Secrets and Variables" for the full command list.
 
 output "aws_github_actions_access_key_id" {
   description = "Access key ID for the GitHub Actions IAM user (user-{project}-github-actions)."
@@ -261,8 +263,8 @@ output "aws_region" {
 # Passthrough — terraform.tfvars values mirrored to GitHub Actions
 # ============================================================================
 # These don't represent any TF-managed resource; they relay terraform.tfvars
-# values so scripts/setup-github-secrets.sh can push them into GitHub in one
-# `terraform output` pass. Source of truth remains in terraform.tfvars.
+# values so they can be pushed into GitHub in one `terraform output` pass.
+# Source of truth remains in terraform.tfvars.
 #
 # The HA CA/cert outputs are read with file() so they expose the PEM
 # *content* rather than the on-disk path. Path-based outputs would flip
@@ -284,13 +286,13 @@ output "home_assistant_token" {
 
 output "home_assistant_ca" {
   description = "Home Assistant CA PEM content (build-time). Empty if var.home_assistant_ca_file is unset. Pushed into GH as HOME_ASSISTANT_CA."
-  value       = var.home_assistant_ca_file == "" ? "" : file(var.home_assistant_ca_file)
+  value       = try(file(var.home_assistant_ca_file), "")
   sensitive   = true
 }
 
 output "home_assistant_cert" {
   description = "Home Assistant host certificate PEM content (build-time). Empty if var.home_assistant_cert_file is unset. Pushed into GH as HOME_ASSISTANT_CERT."
-  value       = var.home_assistant_cert_file == "" ? "" : file(var.home_assistant_cert_file)
+  value       = try(file(var.home_assistant_cert_file), "")
   sensitive   = true
 }
 

@@ -8,7 +8,7 @@
 # Bootstrap note (chicken-and-egg): the human runs the first `terraform apply`
 # with a privileged AWS identity (`aws configure` / SSO admin), which creates
 # this user. After that, the user's access key is exported as a Terraform
-# output, copied into GitHub secrets via scripts/setup-github-secrets.sh,
+# output, copied into GitHub secrets (see deployment.md § "Set GitHub Secrets"),
 # and subsequent CI runs of `terraform apply` use it.
 #
 # The policy is intentionally scoped to:
@@ -22,7 +22,8 @@
 resource "aws_iam_user" "github_actions" {
   name = "user-${var.project_name}-github-actions"
   path = "/"
-  tags = var.tags
+  # tags omitted — CI runs as this user and the policy intentionally withholds
+  # iam:TagUser (self-mutation rights). Tag the user manually if needed.
 }
 
 resource "aws_iam_access_key" "github_actions" {

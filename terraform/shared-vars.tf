@@ -12,9 +12,8 @@ variable "tags" {
   description = "Common tags applied to all taggable resources in both AWS and Azure."
   type        = map(string)
   default = {
-    Environment = "prod"
-    ManagedBy   = "Terraform",
-    Project     = "lando",
+    ManagedBy = "Terraform",
+    Project   = "Lando",
   }
 }
 

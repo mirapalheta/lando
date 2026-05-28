@@ -5,7 +5,7 @@
 - Azure CLI installed and authenticated: `az login`
 - AWS CLI installed and authenticated: `aws configure`
 - GitHub CLI installed and authenticated: `gh auth login`
-- Terraform installed (version >= 1.0)
+- Terraform installed (version >= 1.5)
 - Tailscale auth key with `tag:lando` authorized
 - Home Assistant long-lived access token
 - Docker (for building the container image locally, if needed)
@@ -33,31 +33,35 @@ This provisions all Azure and AWS resources in one pass, including generating
 and storing the HMAC shared secret in both AWS Secrets Manager and Azure Key
 Vault.
 
-### 3. Set GitHub Secrets and Variables
+### 3. Wire up CI/CD (optional)
 
-After `terraform apply` completes, run the setup script:
+If you want GitHub Actions to build and deploy the container on every tagged
+release, set the following secrets and variables on your fork so the workflow
+can authenticate to Azure and AWS.
+
+From the `terraform/` directory:
 
 ```bash
-chmod +x scripts/setup-github-secrets.sh
-cd terraform && ../scripts/setup-github-secrets.sh
+# Secrets
+gh secret set AZURE_CLIENT_SECRET           --body "$(terraform output -raw github_actions_client_secret)"
+gh secret set CONTAINER_REGISTRY_PASSWORD   --body "$(terraform output -raw container_registry_password)"
+gh secret set AWS_ACCESS_KEY_ID             --body "$(terraform output -raw aws_github_actions_access_key_id)"
+gh secret set AWS_SECRET_ACCESS_KEY         --body "$(terraform output -raw aws_github_actions_access_key_secret)"
+
+# Variables
+gh variable set AZURE_CLIENT_ID             --body "$(terraform output -raw github_actions_client_id)"
+gh variable set AZURE_SUBSCRIPTION_ID       --body "$(terraform output -raw azure_subscription_id)"
+gh variable set AZURE_TENANT_ID             --body "$(terraform output -raw azure_tenant_id)"
+gh variable set CONTAINER_REGISTRY_URL      --body "$(terraform output -raw container_registry_url)"
+gh variable set CONTAINER_REGISTRY_USERNAME --body "$(terraform output -raw container_registry_username)"
+gh variable set AWS_REGION                  --body "$(terraform output -raw aws_region)"
 ```
 
-**Secrets set by the script:**
+All values come straight from Terraform outputs — no manual lookup needed.
 
-| Name                          | Source                                               |
-| ----------------------------- | ---------------------------------------------------- |
-| `AZURE_CLIENT_SECRET`         | `terraform output -raw github_actions_client_secret` |
-| `CONTAINER_REGISTRY_PASSWORD` | `terraform output -raw container_registry_password`  |
-
-**Variables set by the script:**
-
-| Name                          | Source                                              |
-| ----------------------------- | --------------------------------------------------- |
-| `AZURE_CLIENT_ID`             | `terraform output -raw github_actions_client_id`    |
-| `AZURE_SUBSCRIPTION_ID`       | `terraform output -raw azure_subscription_id`       |
-| `AZURE_TENANT_ID`             | `terraform output -raw azure_tenant_id`             |
-| `CONTAINER_REGISTRY_URL`      | `terraform output -raw container_registry_url`      |
-| `CONTAINER_REGISTRY_USERNAME` | `terraform output -raw container_registry_username` |
+If you prefer to deploy manually, skip this step and use `terraform apply` directly
+whenever you want to update the running image (set `image_tag` in `terraform.tfvars`
+and re-apply).
 
 ### 4. Verify container app settings
 

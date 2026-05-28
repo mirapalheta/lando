@@ -136,14 +136,17 @@ locals {
   # AWS Lambda packaging paths — consumed by aws-lambda-build.tf and aws-lambda.tf.
   #   source_dir → npm package root (cwd for `npm ci && npm run build`; also the
   #                directory whose source files determine the build hash)
-  #   dist_dir   → esbuild output directory (zipped by build_lambda.sh)
   #   zip_path   → final packaged Lambda bundle, written by build_lambda.sh and
   #                referenced as aws_lambda_function.alexa_smart_home.filename
   lambdas = {
     alexa_smart_home = {
-      source_dir = "${path.module}/../src/aws/lando-alexa-smart-home"
-      dist_dir   = "${path.module}/../src/aws/lando-alexa-smart-home/dist"
-      zip_path   = "${path.module}/.terraform/alexa_smart_home.zip"
+      source_dir = abspath("${path.module}/../src/aws/lando-alexa-smart-home")
+      zip_path   = abspath("${path.module}/.terraform/alexa_smart_home.zip")
     }
   }
+
+  tags = merge(var.tags, {
+    Project   = "Lando",
+    ManagedBy = "Terraform",
+  })
 }

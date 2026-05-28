@@ -18,23 +18,37 @@ locals {
   ]))
 }
 
-# 1. Build dist/ + package the zip in one shot when source files change.
-#    build_lambda.sh runs `npm ci && npm run build` then writes the final
-#    zip to $ZIP_PATH, so terraform doesn't need a separate archive_file
-#    resource — and a fresh runner (no dist/, no zip) is handled implicitly:
-#    if code_hash changed, the script rebuilds everything; if not, the zip
-#    isn't needed because aws_lambda_function.source_code_hash also matches
-#    state and AWS skips the upload.
+# 1. Persist the "effective" Lambda version in Terraform state.
+#    - triggers_replace fires only when alexa_smart_home_code_hash changes,
+#      so a code change destroys/creates this resource and `input` is
+#      re-evaluated against the current var.app_version at that moment.
+#    - ignore_changes = [input] suppresses in-place updates, so bumping
+#      var.app_version with no source change is a no-op: `output` keeps
+#      returning the version that was captured the last time the code changed.
+resource "terraform_data" "lambda_version_tag" {
+  input            = var.app_version
+  triggers_replace = [local.alexa_smart_home_code_hash]
+
+  lifecycle {
+    ignore_changes = [input]
+  }
+}
+
+# 2. Build dist/ + package the zip in one shot when source files change.
+#    Keyed on terraform_data.lambda_version_tag.id — the only way this
+#    resource is replaced is when lambda_version_tag is replaced, which
+#    only happens when source files change. Tag-only bumps no longer
+#    re-trigger the build.
 resource "null_resource" "lambda_build" {
   triggers = {
-    code_hash = local.alexa_smart_home_code_hash
+    state_id = terraform_data.lambda_version_tag.id
   }
 
   provisioner "local-exec" {
     working_dir = local.lambdas.alexa_smart_home.source_dir
     command     = "${abspath(path.module)}/scripts/build_lambda.sh"
     environment = {
-      ZIP_PATH = "${abspath(path.module)}/${local.lambdas.alexa_smart_home.zip_path}"
+      ZIP_PATH = local.lambdas.alexa_smart_home.zip_path
     }
   }
 }
