@@ -120,14 +120,16 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEntityTransform<ContextProperty[]>>(
                 p => p.GetRequiredService<EntityTransform>());
 
-            services.AddEntityTransform<LightDiscoveryTransformer, LightStateTransformer>(Domains.Light);
-            services.AddEntityTransform<SwitchDiscoveryTransformer, SwitchStateTransformer>(Domains.Switch);
+            services.AddEntityTransform<ClimateDiscoveryTransformer, ClimateStateTransformer>(Domains.Climate);
             services.AddEntityTransform<CoverDiscoveryTransformer, CoverStateTransformer>(Domains.Cover);
             services.AddEntityTransform<FanDiscoveryTransformer, FanStateTransformer>(Domains.Fan);
-            services.AddEntityTransform<ClimateDiscoveryTransformer, ClimateStateTransformer>(Domains.Climate);
-            services.AddEntityTransform<MediaPlayerDiscoveryTransformer, MediaPlayerStateTransformer>(Domains.MediaPlayer);
-            services.AddEntityTransform<SensorDiscoveryTransformer, SensorStateTransformer>(Domains.Sensor);
+            services.AddEntityTransform<LightDiscoveryTransformer, LightStateTransformer>(Domains.Light);
             services.AddEntityTransform<LockDiscoveryTransformer, LockStateTransformer>(Domains.Lock);
+            services.AddEntityTransform<MediaPlayerDiscoveryTransformer, MediaPlayerStateTransformer>(Domains.MediaPlayer);
+            services.AddEntityTransform<SceneDiscoveryTransformer, SceneControllerStateTransformer>(Domains.Scene);
+            services.AddEntityTransform<ScriptDiscoveryTransformer, SceneControllerStateTransformer>(Domains.Script);
+            services.AddEntityTransform<SensorDiscoveryTransformer, SensorStateTransformer>(Domains.Sensor);
+            services.AddEntityTransform<SwitchDiscoveryTransformer, SwitchStateTransformer>(Domains.Switch);
             return services;
         }
 
@@ -142,31 +144,34 @@ public static class ServiceCollectionExtensions
         {
             services.AddRequestHandler<SmartHomeHandler, Request, Response>(Function.Handler);
 
-            services.AddKeyedTransient<IDirectiveHandler, DiscoverDirectiveHandler>(DirectiveNames.Discover);
             services.AddKeyedTransient<IDirectiveHandler, AcceptGrantDirectiveHandler>(DirectiveNames.AcceptGrant);
+            services.AddKeyedTransient<IDirectiveHandler, DiscoverDirectiveHandler>(DirectiveNames.Discover);
             services.AddKeyedTransient<IDirectiveHandler, ReportStateDirectiveHandler>(DirectiveNames.ReportState);
             services.AddKeyedTransient<IDirectiveHandler, ResumeScheduleDirectiveHandler>(DirectiveNames.ResumeSchedule);
 
-            services.AddControlDirectiveHandler<SetBrightnessPayload, SetBrightnessPayloadTransform>(DirectiveNames.SetBrightness);
             services.AddControlDirectiveHandler<AdjustBrightnessPayload, AdjustBrightnessPayloadTransform>(DirectiveNames.AdjustBrightness);
+            services.AddControlDirectiveHandler<AdjustPercentagePayload, AdjustPercentagePayloadTransform>(DirectiveNames.AdjustPercentage);
+            services.AddControlDirectiveHandler<AdjustRangeValuePayload, AdjustRangeValuePayloadTransform>(DirectiveNames.AdjustRangeValue);
+            services.AddControlDirectiveHandler<AdjustTargetTemperaturePayload, AdjustTargetTemperaturePayloadTransform>(DirectiveNames.AdjustTargetTemperature);
+            services.AddControlDirectiveHandler<AdjustVolumePayload, AdjustVolumePayloadTransform>(DirectiveNames.AdjustVolume);
+            services.AddControlDirectiveHandler<EmptyPayload, DecreaseColorTemperaturePayloadTransform>(DirectiveNames.DecreaseColorTemperature);
+            services.AddControlDirectiveHandler<EmptyPayload, IncreaseColorTemperaturePayloadTransform>(DirectiveNames.IncreaseColorTemperature);
+            services.AddControlDirectiveHandler<EmptyPayload, LockPayloadTransform>(DirectiveNames.Lock);
+            services.AddControlDirectiveHandler<SetBrightnessPayload, SetBrightnessPayloadTransform>(DirectiveNames.SetBrightness);
             services.AddControlDirectiveHandler<SetColorPayload, SetColorPayloadTransform>(DirectiveNames.SetColor);
             services.AddControlDirectiveHandler<SetColorTemperaturePayload, SetColorTemperaturePayloadTransform>(DirectiveNames.SetColorTemperature);
-            services.AddControlDirectiveHandler<SetPercentagePayload, SetPercentagePayloadTransform>(DirectiveNames.SetPercentage);
-            services.AddControlDirectiveHandler<AdjustPercentagePayload, AdjustPercentagePayloadTransform>(DirectiveNames.AdjustPercentage);
-            services.AddControlDirectiveHandler<SetRangeValuePayload, SetRangeValuePayloadTransform>(DirectiveNames.SetRangeValue);
-            services.AddControlDirectiveHandler<AdjustRangeValuePayload, AdjustRangeValuePayloadTransform>(DirectiveNames.AdjustRangeValue);
-            services.AddControlDirectiveHandler<SetVolumePayload, SetVolumePayloadTransform>(DirectiveNames.SetVolume);
-            services.AddControlDirectiveHandler<AdjustVolumePayload, AdjustVolumePayloadTransform>(DirectiveNames.AdjustVolume);
             services.AddControlDirectiveHandler<SetMutePayload, SetMutePayloadTransform>(DirectiveNames.SetMute);
+            services.AddControlDirectiveHandler<SetPercentagePayload, SetPercentagePayloadTransform>(DirectiveNames.SetPercentage);
+            services.AddControlDirectiveHandler<SetRangeValuePayload, SetRangeValuePayloadTransform>(DirectiveNames.SetRangeValue);
             services.AddControlDirectiveHandler<SetTargetTemperaturePayload, SetTargetTemperaturePayloadTransform>(DirectiveNames.SetTargetTemperature);
-            services.AddControlDirectiveHandler<AdjustTargetTemperaturePayload, AdjustTargetTemperaturePayloadTransform>(DirectiveNames.AdjustTargetTemperature);
             services.AddControlDirectiveHandler<SetThermostatModePayload, SetThermostatModePayloadTransform>(DirectiveNames.SetThermostatMode);
-            services.AddControlDirectiveHandler<EmptyPayload, TurnOnPayloadTransform>(DirectiveNames.TurnOn);
+            services.AddControlDirectiveHandler<SetVolumePayload, SetVolumePayloadTransform>(DirectiveNames.SetVolume);
             services.AddControlDirectiveHandler<EmptyPayload, TurnOffPayloadTransform>(DirectiveNames.TurnOff);
-            services.AddControlDirectiveHandler<EmptyPayload, IncreaseColorTemperaturePayloadTransform>(DirectiveNames.IncreaseColorTemperature);
-            services.AddControlDirectiveHandler<EmptyPayload, DecreaseColorTemperaturePayloadTransform>(DirectiveNames.DecreaseColorTemperature);
-            services.AddControlDirectiveHandler<EmptyPayload, LockPayloadTransform>(DirectiveNames.Lock);
+            services.AddControlDirectiveHandler<EmptyPayload, TurnOnPayloadTransform>(DirectiveNames.TurnOn);
             services.AddControlDirectiveHandler<EmptyPayload, UnlockPayloadTransform>(DirectiveNames.Unlock);
+
+            services.AddSceneDirectiveHandler<EmptyPayload, TurnOnPayloadTransform>(DirectiveNames.Activate, EventNames.ActivationStarted);
+            services.AddSceneDirectiveHandler<EmptyPayload, TurnOffPayloadTransform>(DirectiveNames.Deactivate, EventNames.DeactivationStarted);
             return services;
         }
 
@@ -180,28 +185,47 @@ public static class ServiceCollectionExtensions
                     (provider, key) => ActivatorUtilities.CreateInstance<ControlDirectiveHandler<TPayload>>(provider, key!)
                 );
 
+        /// <summary>
+        /// Registers a <see cref="SceneDirectiveHandler"/> for an
+        /// <c>Alexa.SceneController</c> directive: keys the payload transform and the
+        /// handler under <paramref name="directiveName"/> (Activate/Deactivate) and
+        /// supplies the <paramref name="eventName"/> (ActivationStarted/DeactivationStarted)
+        /// the handler echoes back. Reuses the same dispatch plumbing as
+        /// <see cref="AddControlDirectiveHandler{TPayload,TTransform}"/>; only the
+        /// response namespace/name/payload differ.
+        /// </summary>
+        private IServiceCollection AddSceneDirectiveHandler<TPayload, TTransform>(string directiveName, string eventName)
+            where TPayload : class
+            where TTransform : class, IPayloadTransform<TPayload>
+            => services
+                .AddKeyedSingleton<IPayloadTransform<TPayload>, TTransform>(directiveName)
+                .AddKeyedTransient<IDirectiveHandler, SceneDirectiveHandler>(
+                    directiveName,
+                    (provider, key) => ActivatorUtilities.CreateInstance<SceneDirectiveHandler>(provider, key!, eventName)
+                );
+
         private IServiceCollection AddValidators()
         {
             services.AddSingleton<ITokenValidator, TokenValidator>();
             services.AddTransient<IValidator<Request>, RequestValidator>();
             services.AddTransient<IValidator<EmptyPayload>, EmptyPayloadValidator>();
             services.AddTransient<IValidator<AcceptGrantPayload>, AcceptGrantPayloadValidator>();
-            services.AddTransient<IValidator<DiscoveryDirectivePayload>, DiscoveryDirectivePayloadValidator>();
-            services.AddTransient<IValidator<SetBrightnessPayload>, SetBrightnessPayloadValidator>();
             services.AddTransient<IValidator<AdjustBrightnessPayload>, AdjustBrightnessPayloadValidator>();
+            services.AddTransient<IValidator<AdjustPercentagePayload>, AdjustPercentagePayloadValidator>();
+            services.AddTransient<IValidator<AdjustRangeValuePayload>, AdjustRangeValuePayloadValidator>();
+            services.AddTransient<IValidator<AdjustTargetTemperaturePayload>, AdjustTargetTemperaturePayloadValidator>();
+            services.AddTransient<IValidator<AdjustVolumePayload>, AdjustVolumePayloadValidator>();
+            services.AddTransient<IValidator<DiscoveryDirectivePayload>, DiscoveryDirectivePayloadValidator>();
+            services.AddTransient<IValidator<ResumeSchedulePayload>, ResumeSchedulePayloadValidator>();
+            services.AddTransient<IValidator<SetBrightnessPayload>, SetBrightnessPayloadValidator>();
             services.AddTransient<IValidator<SetColorPayload>, SetColorPayloadValidator>();
             services.AddTransient<IValidator<SetColorTemperaturePayload>, SetColorTemperaturePayloadValidator>();
-            services.AddTransient<IValidator<SetPercentagePayload>, SetPercentagePayloadValidator>();
-            services.AddTransient<IValidator<AdjustPercentagePayload>, AdjustPercentagePayloadValidator>();
-            services.AddTransient<IValidator<SetRangeValuePayload>, SetRangeValuePayloadValidator>();
-            services.AddTransient<IValidator<AdjustRangeValuePayload>, AdjustRangeValuePayloadValidator>();
-            services.AddTransient<IValidator<SetVolumePayload>, SetVolumePayloadValidator>();
-            services.AddTransient<IValidator<AdjustVolumePayload>, AdjustVolumePayloadValidator>();
             services.AddTransient<IValidator<SetMutePayload>, SetMutePayloadValidator>();
+            services.AddTransient<IValidator<SetPercentagePayload>, SetPercentagePayloadValidator>();
+            services.AddTransient<IValidator<SetRangeValuePayload>, SetRangeValuePayloadValidator>();
             services.AddTransient<IValidator<SetTargetTemperaturePayload>, SetTargetTemperaturePayloadValidator>();
-            services.AddTransient<IValidator<AdjustTargetTemperaturePayload>, AdjustTargetTemperaturePayloadValidator>();
             services.AddTransient<IValidator<SetThermostatModePayload>, SetThermostatModePayloadValidator>();
-            services.AddTransient<IValidator<ResumeSchedulePayload>, ResumeSchedulePayloadValidator>();
+            services.AddTransient<IValidator<SetVolumePayload>, SetVolumePayloadValidator>();
             return services;
         }
     }

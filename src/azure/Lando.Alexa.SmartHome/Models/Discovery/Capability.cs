@@ -57,6 +57,23 @@ public sealed class Capability
     public CapabilitySemantics? Semantics { get; set; }
 
     /// <summary>
+    /// <c>Alexa.SceneController</c> only: whether the scene/activity supports a
+    /// <c>Deactivate</c> directive. Null (and therefore omitted) on every other
+    /// capability.
+    /// </summary>
+    [JsonPropertyName("supportsDeactivation")]
+    public bool? SupportsDeactivation { get; set; }
+
+    /// <summary>
+    /// <c>Alexa.SceneController</c> only: whether activation/deactivation is
+    /// proactively reported to the Alexa event gateway. The bridge answers
+    /// Activate/Deactivate synchronously, so this is reported <c>false</c>.
+    /// Null (and therefore omitted) on every other capability.
+    /// </summary>
+    [JsonPropertyName("proactivelyReported")]
+    public bool? ProactivelyReported { get; set; }
+
+    /// <summary>
     /// Convenience factory for a stateless capability such as <c>Alexa.SceneController</c>
     /// or <c>Alexa.DoorbellEventSource</c> that exposes no <c>properties</c> block.
     /// </summary>
@@ -389,6 +406,22 @@ public sealed class Capability
         {
             Supported = [new(LockControllerProperties.LockState)]
         }
+    };
+
+    /// <summary>
+    /// Builds the <c>Alexa.SceneController</c> capability advertised on HA scene
+    /// and script endpoints. <paramref name="supportsDeactivation"/> is true for
+    /// scripts (stoppable via <c>script.turn_off</c>) and false for scenes
+    /// (fire-only). Activate/Deactivate are answered synchronously, so
+    /// <c>proactivelyReported</c> is false.
+    /// </summary>
+    /// <param name="supportsDeactivation">Whether the endpoint accepts Deactivate.</param>
+    /// <returns>The SceneController capability for discovery.</returns>
+    public static Capability SceneController(bool supportsDeactivation) => new()
+    {
+        Interface = Namespaces.SceneController,
+        SupportsDeactivation = supportsDeactivation,
+        ProactivelyReported = false
     };
 
     public static List<Capability> DefaultCapabilities => [Alexa, EndpointHealth];

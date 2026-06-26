@@ -190,6 +190,42 @@ services.AddControlDirectiveHandler<EmptyPayload, VacuumTurnOffPayloadTransform>
 
 ---
 
+## Stateless / activation capabilities (scenes, scripts)
+
+Some domains aren't stateful devices — they're _triggers_. HA `scene` and
+`script` entities surface as `Alexa.SceneController` and don't fit the
+PowerController + payload-transform pattern above:
+
+- **Discovery:** the capability carries `supportsDeactivation` /
+  `proactivelyReported` flags rather than a `properties` block. Build it with
+  `Capability.SceneController(supportsDeactivation: …)`. Scenes pass `false`
+  (fire-only); scripts pass `true` (`script.turn_off` stops a running script).
+- **State:** there's no controller state to report, so both domains share
+  `SceneControllerStateTransformer`, which returns no domain properties (the
+  base still stamps `EndpointHealth`).
+- **Directives:** SceneController must reply in its own namespace with
+  `ActivationStarted` / `DeactivationStarted` + a `SceneActivationPayload`, not
+  the generic `Alexa.Response`. Rather than a separate handler, `SceneDirectiveHandler`
+  subclasses the generic `ControlDirectiveHandler<EmptyPayload, SceneActivationPayload>`
+  — it reuses the resolve → transform → call → error-wrap flow and only overrides
+  `Response`, `Namespace`, and `EventName`. Activate/Deactivate reuse the existing
+  `TurnOn`/`TurnOff` payload transforms (a scene/script isn't a cover, so they fall
+  through to `turn_on`/`turn_off`). Register with the `AddSceneDirectiveHandler`
+  helper, which keys both the payload transform and the handler under the directive
+  name and passes the matching event name:
+
+  ```csharp
+  services.AddSceneDirectiveHandler<EmptyPayload, TurnOnPayloadTransform>(DirectiveNames.Activate, EventNames.ActivationStarted);
+  services.AddSceneDirectiveHandler<EmptyPayload, TurnOffPayloadTransform>(DirectiveNames.Deactivate, EventNames.DeactivationStarted);
+  ```
+
+Use these as the reference if you add another activation-style domain (e.g.
+`button`) or any directive whose response shape differs from the standard
+`Alexa.Response` — subclass `ControlDirectiveHandler<TRequest, TResponse>` and
+override the response hooks.
+
+---
+
 ## Step 6 — Write tests
 
 Add a test class in `tests/Lando.Alexa.SmartHome.Tests/Transformers/Entity/`:

@@ -136,12 +136,17 @@ locals {
   # AWS Lambda packaging paths — consumed by aws-lambda-build.tf and aws-lambda.tf.
   #   source_dir → npm package root (cwd for `npm ci && npm run build`; also the
   #                directory whose source files determine the build hash)
-  #   zip_path   → final packaged Lambda bundle, written by build_lambda.sh and
-  #                referenced as aws_lambda_function.alexa_smart_home.filename
+  #   zip_path   → final packaged Lambda bundle. Kept MODULE-RELATIVE so the value
+  #                used as aws_lambda_function.alexa_smart_home.filename is identical
+  #                on every machine (an absolute path would leak the applying
+  #                machine's path into state and break cross-machine uploads). The
+  #                build step wraps it in abspath() because build_lambda.sh runs with
+  #                cwd = source_dir, where a relative target would land in the wrong
+  #                place.
   lambdas = {
     alexa_smart_home = {
       source_dir = abspath("${path.module}/../src/aws/lando-alexa-smart-home")
-      zip_path   = abspath("${path.module}/.terraform/alexa_smart_home.zip")
+      zip_path   = "${path.module}/.terraform/alexa_smart_home.zip"
     }
   }
 

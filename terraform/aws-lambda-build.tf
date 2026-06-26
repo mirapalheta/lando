@@ -48,7 +48,7 @@ resource "null_resource" "lambda_build" {
     working_dir = local.lambdas.alexa_smart_home.source_dir
     command     = "${abspath(path.module)}/scripts/build_lambda.sh"
     environment = {
-      ZIP_PATH = local.lambdas.alexa_smart_home.zip_path
+      ZIP_PATH = abspath(local.lambdas.alexa_smart_home.zip_path)
     }
   }
 }

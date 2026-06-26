@@ -203,6 +203,31 @@ Each `HomeAssistantRequest` factory (e.g. `HomeAssistantRequest.TurnOn`,
 set of fields HA expects for that service, so a transformer can't
 accidentally set a `temperature` field on a `light.turn_on` call.
 
+## SceneController — scenes and scripts
+
+The `scene` and `script` domains surface as `Alexa.SceneController` endpoints
+(`SceneDiscoveryTransformer` → `SCENE_TRIGGER`, `ScriptDiscoveryTransformer`
+→ `ACTIVITY_TRIGGER`) and share a stateless `SceneControllerStateTransformer`
+(no controller state — only the base `EndpointHealth` property). Scenes
+advertise `supportsDeactivation: false` (HA has no `scene.turn_off`); scripts
+advertise `true` (a running script is stopped with `script.turn_off`).
+
+Their one wrinkle is the response shape: `SceneController` does not answer with
+an `Alexa.Response` + context properties — it must reply in its own namespace
+with a dedicated event name (`ActivationStarted` / `DeactivationStarted`) and a
+`SceneActivationPayload` (cause + timestamp). Rather than a bespoke handler,
+`ControlDirectiveHandler<TRequest>` was generalised into
+`ControlDirectiveHandler<TRequest, TResponse>` — the dispatch flow (resolve
+entity → keyed payload transform → service call → error wrap) is identical, and
+the response is a subclass hook (`Response` plus the `Namespace`/`EventName`
+virtuals). `SceneDirectiveHandler` is a thin subclass that returns a
+`SceneActivationPayload` in the `Alexa.SceneController` namespace; Activate and
+Deactivate reuse the existing `TurnOn`/`TurnOff` payload transforms (a
+scene/script isn't a cover, so they fall through to `turn_on`/`turn_off`), with
+the HA domain taken from the entity id so one handler serves both. This is the
+pattern to follow for any future directive whose response differs from the
+standard `Alexa.Response`.
+
 ## Proactive state — ChangeReportService
 
 `Services/ChangeReportService.cs` is the long-running half of the bridge.

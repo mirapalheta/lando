@@ -62,6 +62,8 @@ terraform init && terraform apply
 | `climate`             | ThermostatController                                   | "set to 72 degrees", "set to heat mode"      |
 | `media_player`        | PowerController, Speaker                               | "turn on / off", "set volume to 40%"         |
 | `sensor`              | TemperatureSensor (numeric temperature sensors)        | "what's the temperature in the kitchen?"     |
+| `scene`               | SceneController (activate only)                        | "turn on movie night"                        |
+| `script`              | SceneController (activate + deactivate)                | "turn on wake up master bedroom"             |
 
 Device types whose HA domain has no registered transformer are silently skipped
 at discovery time — a partial deploy yields a valid (smaller) discovery

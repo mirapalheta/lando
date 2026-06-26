@@ -234,6 +234,40 @@ internal static class TestEntities
             (CustomAttributes.Expose, exposed));
 
     /// <summary>
+    /// Builds a <see cref="HomeAssistantEntity"/> for the <c>scene</c> domain. HA
+    /// scenes carry their last-activated timestamp as state; the value is
+    /// irrelevant to SceneController discovery, which is stateless.
+    /// </summary>
+    /// <param name="entityId">The entity id to assign.</param>
+    /// <param name="state">The HA state string (a timestamp in practice).</param>
+    /// <param name="exposed">Whether the entity is marked <c>lando_expose=true</c>.</param>
+    /// <returns>The fabricated entity.</returns>
+    public static HomeAssistantEntity Scene(
+        string entityId = "scene.movie_night",
+        string state = "2026-01-01T00:00:00+00:00",
+        bool exposed = true) => Entity(
+            entityId,
+            state,
+            (CustomAttributes.Expose, exposed));
+
+    /// <summary>
+    /// Builds a <see cref="HomeAssistantEntity"/> for the <c>script</c> domain.
+    /// Scripts report <c>on</c> while running and <c>off</c> otherwise; the value
+    /// is irrelevant to SceneController discovery, which is stateless.
+    /// </summary>
+    /// <param name="entityId">The entity id to assign.</param>
+    /// <param name="state">The HA state string (<c>"on"</c>/<c>"off"</c>).</param>
+    /// <param name="exposed">Whether the entity is marked <c>lando_expose=true</c>.</param>
+    /// <returns>The fabricated entity.</returns>
+    public static HomeAssistantEntity Script(
+        string entityId = "script.wake_up",
+        string state = "off",
+        bool exposed = true) => Entity(
+            entityId,
+            state,
+            (CustomAttributes.Expose, exposed));
+
+    /// <summary>
     /// Generic factory for payload-transformer tests that only care about the
     /// entity id (and optionally a single attribute the transformer reads).
     /// Picks the matching per-domain factory based on the entity id's prefix.
@@ -256,6 +290,8 @@ internal static class TestEntities
             "media_player" => MediaPlayer(entityId: entityId),
             "sensor" => Sensor(entityId: entityId),
             "lock" => Lock(entityId: entityId),
+            "scene" => Scene(entityId: entityId),
+            "script" => Script(entityId: entityId),
             _ => Entity(entityId, "on"),
         };
         entity.Attributes ??= new();

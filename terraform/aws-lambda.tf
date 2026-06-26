@@ -73,10 +73,12 @@ resource "aws_lambda_function" "alexa_smart_home" {
   handler       = "index.handler"
   architectures = ["x86_64"]
 
-  # build_lambda.sh writes the zip to this path. Filename is only read by
-  # the AWS provider when source_code_hash differs from state (i.e. an
-  # upload is needed) — and that's exactly when null_resource.lambda_build
-  # has been triggered to (re)produce the file.
+  # Module-relative path to the bundle build_lambda.sh produces (the build step
+  # abspath()s the same zip_path; here it stays relative so the value persisted in
+  # state is machine-independent). Filename is only read by the AWS provider when
+  # source_code_hash differs from state (i.e. an upload is needed) — and that's
+  # exactly when null_resource.lambda_build has been triggered to (re)produce the
+  # file.
   filename = local.lambdas.alexa_smart_home.zip_path
   # Derive the change-detection marker from the source files directly,
   # not from the built zip. This lets `terraform plan` resolve a stable
@@ -102,13 +104,6 @@ resource "aws_lambda_function" "alexa_smart_home" {
   tags = merge(local.tags, {
     Version = terraform_data.lambda_version_tag.output
   })
-
-  lifecycle {
-    # filename is an absolute path that differs between local and CI environments.
-    # source_code_hash is the actual change-detection mechanism; the provider only
-    # reads filename when it needs to upload a new zip (i.e. when the hash changes).
-    ignore_changes = [filename]
-  }
 
   depends_on = [
     aws_iam_role_policy_attachment.alexa_smart_home_basic_execution,

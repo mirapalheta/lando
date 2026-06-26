@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 using Lando.Alexa.SmartHome.Models.ChangeReport;
 
@@ -14,5 +15,5 @@ public sealed class SceneActivationPayload
     public Cause Cause { get; set; } = new();
 
     [JsonPropertyName("timestamp")]
-    public string Timestamp { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
 }

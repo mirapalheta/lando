@@ -20,7 +20,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: 🔧 Setup .NET
         uses: actions/setup-dotnet@v5
@@ -47,7 +47,7 @@ jobs:
             --logger "console;verbosity=normal"
 
       - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           directory: coverage
           flags: dotnet
@@ -68,7 +68,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: 🔧 Setup Node
         uses: actions/setup-node@v6
@@ -90,7 +90,7 @@ jobs:
         run: npm run test:coverage
 
       - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           directory: src/aws/lando-alexa-smart-home/coverage
           flags: lambda
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: 🔧 Setup Terraform
         uses: hashicorp/setup-terraform@v4
