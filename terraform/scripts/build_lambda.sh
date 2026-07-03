@@ -1,15 +1,16 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
 # build_lambda.sh — invoked by null_resource.lambda_build in
-# aws-lambda-build.tf when local.alexa_smart_home_code_hash changes. Builds
-# the Alexa Smart Home Lambda bundle into dist/index.mjs (esbuild target
-# defined in package.json) and packages it as $ZIP_PATH for upload by
-# aws_lambda_function.alexa_smart_home.
+# aws-lambda-build.tf on every apply. Builds the Alexa proxy Lambda bundle
+# into dist/index.mjs (esbuild target defined in package.json) and packages it
+# as $ZIP_PATH for upload by aws_lambda_function.alexa_proxy.
 #
-# The terraform trigger IS the freshness check: if we're running, sources
-# differ from what produced the last artifacts (or we're on a fresh runner
-# with no prior artifacts at all), so we always rebuild and rezip — no
-# in-script "is dist up to date?" branch needed.
+# The build runs unconditionally: the zip lives in the ephemeral .terraform/
+# dir and never survives between runs (fresh CI runners, or a partially-failed
+# apply that advanced state without keeping the artifact), so we always rebuild
+# and rezip to guarantee the file exists. Change detection for the actual code
+# upload is handled by aws_lambda_function.source_code_hash, which is derived
+# from the source files — so rebuilding with unchanged source is a no-op upload.
 #
 # Inputs:
 #   Working directory — npm package root (set by terraform's working_dir).

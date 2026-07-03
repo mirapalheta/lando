@@ -113,7 +113,7 @@ the function logs.
    endpoint.
 
 4. **Alexa skill endpoint URL wrong** — verify the Lambda function name in the Alexa Developer Console matches
-   `terraform output -raw alexa_smart_home_function_name`.
+   `terraform output -raw alexa_proxy_function_name`.
 
 ---
 

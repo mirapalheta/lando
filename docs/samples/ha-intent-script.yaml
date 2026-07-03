@@ -1,0 +1,35 @@
+# Sample: an HA script wired to an Alexa Custom Skill intent.
+# Illustrative only — substitute your own entity ids, fields, and intent name.
+# See ../custom-skill.md.
+
+# ---------------------------------------------------------------------------
+# scripts/  ->  entity_id: script.example_routine
+# ---------------------------------------------------------------------------
+example_routine:
+  alias: Example Routine
+  mode: single
+  fields:
+    level:
+      description: Target level (e.g. brightness or shade position), in percent.
+      example: 40
+      default: 100
+    duration:
+      description: Optional duration (AMAZON.DURATION arrives as ISO-8601, e.g. PT10M).
+      example: PT10M
+  sequence:
+    - action: light.turn_on
+      target:
+        entity_id: light.example
+      data:
+        brightness_pct: "{{ level | int(100) }}"
+
+# ---------------------------------------------------------------------------
+# customize.yaml  ->  bind the script to the RunRoutine intent
+# ---------------------------------------------------------------------------
+# script.example_routine:
+#   lando_expose: true          # lando discovery must see it
+#   alexa_expose: false         # keep it out of the Smart Home skill
+#   alexa_intent: RunRoutine
+#   alexa_slots:
+#     level: level              # AMAZON.NUMBER   -> field level
+#     duration: duration        # AMAZON.DURATION -> field duration

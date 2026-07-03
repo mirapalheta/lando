@@ -62,9 +62,9 @@ void test("forwards the event to Azure with HMAC headers and returns the parsed 
   // Returned the parsed Azure response.
   assert.deepEqual(result, { event: { header: { name: "Response" } } });
 
-  // One fetch, to the configured Azure endpoint, with the documented headers.
+  // One fetch, to the smart-home route under the base endpoint, with the documented headers.
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, AZURE_ENDPOINT);
+  assert.equal(calls[0].url, `${AZURE_ENDPOINT}/smart-home`);
   const { init } = calls[0];
   assert.ok(init);
   const headers = new Headers(init.headers);
@@ -72,6 +72,25 @@ void test("forwards the event to Azure with HMAC headers and returns the parsed 
   assert.equal(headers.get("X-Aws-Request-Id"), "req-123");
   assert.match(headers.get("X-Lando-Timestamp") ?? "", /^\d+$/);
   assert.match(headers.get("X-Lando-Signature") ?? "", /^v1=[0-9a-f]{64}$/);
+});
+
+void test("routes a custom-skill payload to the custom-skill route", async (t) => {
+  mockSecret(t);
+  const calls: { url: string | URL | Request; init?: RequestInit }[] = [];
+  globalThis.fetch = mock.fn((url, init): Promise<Response> => {
+    calls.push({ url, init });
+    return Promise.resolve(
+      new Response(JSON.stringify({ version: "1.0" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+  });
+
+  await handler({ request: { type: "IntentRequest" } }, CONTEXT);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, `${AZURE_ENDPOINT}/custom-skill`);
 });
 
 void test("throws a legible error when AZURE_ENDPOINT is missing", async () => {

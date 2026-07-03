@@ -213,17 +213,17 @@ output "github_actions_service_principal_object_id" {
 }
 
 # ============================================================================
-# AWS / Alexa Smart Home Lambda
+# AWS / Alexa proxy Lambda
 # ============================================================================
 
-output "alexa_smart_home_arn" {
-  description = "ARN of the Alexa Smart Home proxy Lambda."
-  value       = aws_lambda_function.alexa_smart_home.arn
+output "alexa_proxy_arn" {
+  description = "ARN of the Alexa proxy Lambda (fronts both Smart Home and Custom Skill)."
+  value       = aws_lambda_function.alexa_proxy.arn
 }
 
-output "alexa_smart_home_function_name" {
-  description = "Name of the Alexa Smart Home proxy Lambda — paste into the Alexa Developer Console under Smart Home → Default endpoint."
-  value       = aws_lambda_function.alexa_smart_home.function_name
+output "alexa_proxy_function_name" {
+  description = "Name of the Alexa proxy Lambda — paste into the Alexa Developer Console under Smart Home → Default endpoint (and the Custom Skill's endpoint, if configured)."
+  value       = aws_lambda_function.alexa_proxy.function_name
 }
 
 output "hmac_shared_secret_aws_arn" {
@@ -302,9 +302,9 @@ output "tailscale_auth_key" {
   sensitive   = true
 }
 
-output "alexa_smart_home_skill_id" {
-  description = "Alexa Smart Home skill ID passthrough. Pushed into GH as ALEXA_SMART_HOME_SKILL_ID."
-  value       = var.alexa_smart_home_skill_id
+output "alexa_skill_id" {
+  description = "Alexa skill ID passthrough — one skill, both Smart Home and Custom models. Pushed into GH as ALEXA_SKILL_ID."
+  value       = var.alexa_skill_id
 }
 
 output "alexa_smart_home_auth_client_id" {

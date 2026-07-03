@@ -34,7 +34,7 @@ The primary security surface areas of this project are:
   reaching the Azure Function.
 - **LWA token handling** (`src/azure/Lando.Alexa.Core/Security/LWA/`) —
   the Login-with-Amazon OAuth2 flow and refresh token storage in Key Vault.
-- **AWS Lambda signing** (`src/aws/lando-alexa-smart-home/src/hmac.ts`) —
+- **AWS Lambda signing** (`src/aws/lando-alexa-proxy/src/hmac.ts`) —
   the outbound HMAC signer that pairs with the Azure verifier.
 - **Terraform IAM / RBAC configuration** (`terraform/`) — the managed
   identity and Key Vault access policies.

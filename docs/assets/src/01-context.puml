@@ -24,7 +24,7 @@ skinparam rectangle {
 actor "Alexa user\n(at home)" as user
 
 rectangle "Alexa cloud\n[external]\nSmart Home API + Event Gateway" as alexa <<external>>
-rectangle "AWS Lambda\n[external runtime]\nlando-alexa-smart-home\n— HMAC-signs and forwards" as lambda <<system>>
+rectangle "AWS Lambda\n[external runtime]\nlando-alexa-proxy\n— HMAC-signs and forwards" as lambda <<system>>
 rectangle "Azure Container App\n[external runtime]\nLando Function App\n— verify + dispatch + translate" as func <<system>>
 rectangle "Tailscale overlay\n[private mesh]" as tailscale <<network>>
 rectangle "Home Assistant\n[local network]\nREST + WebSocket APIs" as ha <<external>>

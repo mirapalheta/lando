@@ -16,10 +16,23 @@ function requireEnv(name: string): string {
   return value;
 }
 
+/**
+ * Smart Home directives carry a top-level `directive`; Custom Skill requests
+ * carry a top-level `request.type` (LaunchRequest / IntentRequest /
+ * SessionEndedRequest). The same Lambda signs + forwards both — only the
+ * destination route differs.
+ */
+function isCustomSkillPayload(event: unknown): boolean {
+  const envelope = event as { directive?: unknown; request?: { type?: string } } | null;
+  return envelope?.request?.type !== undefined && envelope.directive === undefined;
+}
+
 export const handler = async (event: unknown, context: Context): Promise<unknown> => {
-  // Resolve config inside the handler — see requireEnv comment above. Costs a
-  // few microseconds on warm invocations and keeps cold-start failures legible.
-  const azureEndpoint = requireEnv("AZURE_ENDPOINT");
+  // Resolve config inside the handler — see requireEnv comment above.
+  // AZURE_ENDPOINT is the base Alexa route (e.g. https://<host>/api/alexa); we
+  // append the per-skill segment so a single env var serves both paths:
+  // `/smart-home` for directives, `/custom-skill` for intents.
+  const azureEndpoint = `${requireEnv("AZURE_ENDPOINT")}/${isCustomSkillPayload(event) ? "custom-skill" : "smart-home"}`;
   const hmacSecretArn = requireEnv("HMAC_SECRET_ARN");
   const forwardTimeoutMs = parseInt(process.env.FORWARD_TIMEOUT_MS ?? "8000", 10);
 

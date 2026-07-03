@@ -141,33 +141,34 @@ alexa_smart_home_auth_client_id = "amzn1.application-oa2-client.xxxxxxxxxxxxxxxx
 # hostname = "container_app"
 
 # =========================================================================
-# AWS — Alexa Smart Home Lambda proxy
+# AWS — Alexa proxy Lambda
 # =========================================================================
-# The Lambda acts as the Alexa Smart Home endpoint and forwards directives
-# to the Azure Function over HMAC-signed HTTP. AWS resource names are
-# derived from project_name:
-#   Lambda function → lambda-{project_name}-alexa-smart-home
-#   IAM role        → role-{project_name}-alexa-smart-home
+# The Lambda acts as the endpoint for both the Alexa Smart Home skill and
+# the Custom Skill, and forwards directives/intents to the Azure Function
+# over HMAC-signed HTTP. AWS resource names are derived from project_name:
+#   Lambda function → lambda-{project_name}-alexa-proxy
+#   IAM role        → role-{project_name}-alexa-proxy
 #   IAM policy      → policy-{project_name}-hmac-secret-read
 #   Secrets Manager → {project_name}/hmac/shared-secret
 
-# REQUIRED: Alexa Smart Home skill ID that is allowed to invoke the Lambda.
-# Sets lambda:EventSourceToken on the resource-based policy.
+# REQUIRED: Alexa skill ID that is allowed to invoke the Lambda — one skill
+# with both the Smart Home and Custom (voice intent) models enabled.
+# Sets lambda:EventSourceToken on both resource-based policy statements.
 # Format: amzn1.ask.skill.XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-alexa_smart_home_skill_id = "amzn1.ask.skill.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+alexa_skill_id = "amzn1.ask.skill.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 # Optional: AWS region for the Lambda. Alexa Smart Home (North America)
 # requires us-east-1. Default: "us-east-1"
 # aws_region = "us-east-1"
 
 # Optional: CloudWatch log retention for the Lambda. Default: 30 (days)
-# alexa_smart_home_log_retention_days = 30
+# alexa_proxy_log_retention_days = 30
 
 # Optional: Lambda memory allocation. 256 MB gives faster cold starts than
 # 128 MB at negligible extra cost for this request volume. Default: 256
-# alexa_smart_home_memory_mb = 256
+# alexa_proxy_memory_mb = 256
 
 # Optional: Lambda execution timeout. Alexa Smart Home requires a sub-8s
 # end-to-end response; 15s leaves headroom for cold-start + Azure latency.
 # Default: 15 (seconds)
-# alexa_smart_home_timeout_seconds = 15
+# alexa_proxy_timeout_seconds = 15

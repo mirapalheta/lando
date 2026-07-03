@@ -37,6 +37,7 @@ internal static class TestEntities
     /// <param name="brightness255">Optional brightness on the HA 0..255 scale.</param>
     /// <param name="colorTempMired">Optional colour temperature in mired.</param>
     /// <param name="exposed">Whether the entity is marked <c>lando_expose=true</c>.</param>
+    /// <param name="hs_color">Optional hue/saturation color as a two-element array [hue, saturation].</param>
     /// <returns>The fabricated entity.</returns>
     public static HomeAssistantEntity Light(
         string entityId = "light.living_room",
@@ -44,13 +45,15 @@ internal static class TestEntities
         IReadOnlyList<string>? supportedColorModes = null,
         int? brightness255 = null,
         int? colorTempMired = null,
-        bool exposed = true) => Entity(
+        bool exposed = true,
+        string[]? hs_color = null) => Entity(
             entityId,
             state,
             (EntityAttributes.SupportedColorModes, (object?)(supportedColorModes ?? ["onoff"])),
             (EntityAttributes.Brightness, brightness255),
             (EntityAttributes.ColorTemp, colorTempMired),
-            (CustomAttributes.Expose, exposed));
+            (CustomAttributes.Expose, exposed),
+            ("hs_color", hs_color));
 
     /// <summary>
     /// Builds a <see cref="HomeAssistantEntity"/> for the <c>switch</c> domain.

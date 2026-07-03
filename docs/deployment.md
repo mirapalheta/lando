@@ -113,7 +113,7 @@ git push origin v0.1.1
 After infrastructure is provisioned, point Alexa at the Lambda:
 
 ```bash
-terraform output -raw alexa_smart_home_function_name
+terraform output -raw alexa_proxy_function_name
 ```
 
 In the [Alexa Developer Console](https://developer.amazon.com/alexa/console/ask):
@@ -145,7 +145,7 @@ terraform output                                      # all outputs
 terraform output -raw container_app_url               # container app FQDN
 terraform output -raw container_registry_url          # ACR login server
 terraform output -raw key_vault_uri                   # Key Vault URI
-terraform output -raw alexa_smart_home_function_name  # Lambda name for Alexa console
+terraform output -raw alexa_proxy_function_name       # Lambda name for Alexa console
 ```
 
 ---

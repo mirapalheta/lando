@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using FluentValidation;
 using Lando;
 using Lando.Alexa.Security.LWA;
@@ -35,6 +36,13 @@ using static Lando.HomeAssistant.Constants;
 /// entity transformers (discovery + state), and the Login-with-Amazon
 /// + Event Gateway plumbing.
 /// </summary>
+/// <remarks>
+/// Composition-root wiring only — no branching logic worth line-covering.
+/// The registrations themselves are exercised indirectly by every handler /
+/// validator / transformer test; excluded here so DI plumbing doesn't dilute
+/// the coverage metric for the actual business logic.
+/// </remarks>
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)

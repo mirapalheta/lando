@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Lando.HomeAssistant.Models;
@@ -110,6 +111,30 @@ public sealed class HomeAssistantRequest
     /// </summary>
     [JsonPropertyName("position")]
     public int? Position { get; private set; }
+
+    /// <summary>
+    /// Run-time variables passed to a script via <c>script.turn_on</c>, used by
+    /// <see cref="RunScript"/>. Each entry surfaces inside the script as a
+    /// run variable (the same shape a script's declared <c>fields</c> take), so
+    /// callers can parameterize a script invocation. Omitted when null.
+    /// </summary>
+    [JsonPropertyName("variables")]
+    public Dictionary<string, object?>? Variables { get; private set; }
+
+    /// <summary>
+    /// Builds a <c>script.turn_on</c> request that runs the target script,
+    /// optionally passing <paramref name="variables"/> through to it (e.g. a
+    /// custom-skill intent's slot values mapped to the script's fields). The
+    /// service is <c>turn_on</c> and the domain is derived from the script
+    /// entity id, so the caller hits <c>services/script/turn_on</c>.
+    /// </summary>
+    /// <param name="entityId">Script entity id, e.g. <c>script.wake_up</c>.</param>
+    /// <param name="variables">Optional run variables to inject into the script.</param>
+    public static HomeAssistantRequest RunScript(string entityId, IReadOnlyDictionary<string, object?>? variables = null)
+        => new(entityId, Constants.Services.TurnOn)
+        {
+            Variables = variables is { Count: > 0 } ? new(variables) : null
+        };
 
     /// <summary>
     /// Builds a relative-brightness adjustment via <c>light.turn_on</c>.

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Lando.Security;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// stores live in the FunctionApp project (where the Azure-aware persistence
 /// implementation sits); this layer just owns the registration shape.
 /// </summary>
+/// <remarks>Composition-root wiring only — excluded from coverage.</remarks>
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)

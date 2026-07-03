@@ -27,7 +27,7 @@ dotnet build
 dotnet test
 
 # AWS Lambda proxy (Node 26 required)
-cd src/aws/lando-alexa-smart-home
+cd src/aws/lando-alexa-proxy
 npm ci
 npm test
 ```

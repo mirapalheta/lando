@@ -37,6 +37,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Lando.Abstractions/Lando.Abstractions.csproj" />
+    <ProjectReference Include="../Lando.Alexa.CustomSkill/Lando.Alexa.CustomSkill.csproj" />
     <ProjectReference Include="../Lando.Alexa.SmartHome/Lando.Alexa.SmartHome.csproj" />
     <ProjectReference Include="../Lando.HomeAssistant.Core/Lando.HomeAssistant.Core.csproj" />
   </ItemGroup>

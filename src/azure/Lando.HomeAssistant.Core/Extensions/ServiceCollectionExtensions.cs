@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
@@ -18,6 +19,11 @@ using static Lando.HomeAssistant.Constants;
 /// <see cref="SocketsHttpHandler"/> stack (proxy + custom CA
 /// + bearer auth), and the discovery / service-caller / WebSocket services.
 /// </summary>
+/// <remarks>
+/// Composition-root wiring only — excluded from coverage; see the identical
+/// note on <c>Lando.Alexa.SmartHome</c>'s <c>ServiceCollectionExtensions</c>.
+/// </remarks>
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)

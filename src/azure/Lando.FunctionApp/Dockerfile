@@ -19,6 +19,7 @@ WORKDIR /src
 # new projects here whenever a *.csproj is introduced under src/azure/.
 COPY Lando.Abstractions/Lando.Abstractions.csproj                               ./Lando.Abstractions/
 COPY Lando.Alexa.Core/Lando.Alexa.Core.csproj                                   ./Lando.Alexa.Core/
+COPY Lando.Alexa.CustomSkill/Lando.Alexa.CustomSkill.csproj                     ./Lando.Alexa.CustomSkill/
 COPY Lando.Alexa.SmartHome/Lando.Alexa.SmartHome.csproj                         ./Lando.Alexa.SmartHome/
 COPY Lando.FunctionApp/Lando.FunctionApp.csproj                                 ./Lando.FunctionApp/
 COPY Lando.HomeAssistant.Abstractions/Lando.HomeAssistant.Abstractions.csproj   ./Lando.HomeAssistant.Abstractions/

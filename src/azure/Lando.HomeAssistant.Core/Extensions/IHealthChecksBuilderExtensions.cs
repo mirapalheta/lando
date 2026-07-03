@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using HealthChecks.Uris;
 using Lando.HomeAssistant.Configuration;
@@ -14,6 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// <see cref="HomeAssistantHealthCheck"/>) on
 /// an <see cref="IHealthChecksBuilder"/>.
 /// </summary>
+/// <remarks>Composition-root wiring only — excluded from coverage.</remarks>
+[ExcludeFromCodeCoverage]
 public static class IHealthChecksBuilderExtensions
 {
     private const string NAME = "home-assistant";

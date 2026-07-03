@@ -12,7 +12,7 @@
 # and subsequent CI runs of `terraform apply` use it.
 #
 # The policy is intentionally scoped to:
-#   - the Alexa Smart Home Lambda + its role + its CloudWatch log group
+#   - the Alexa proxy Lambda + its role + its CloudWatch log group
 #   - the HMAC shared secret in Secrets Manager
 #   - read-only access on this user's own IAM resources (so `terraform plan`
 #     can refresh them without granting self-mutation rights — drift on this
@@ -70,8 +70,8 @@ resource "aws_iam_policy" "github_actions_deploy" {
           "lambda:DeleteFunctionConcurrency",
         ]
         Resource = [
-          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:${local.names.lambda_alexa_smart_home}",
-          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:${local.names.lambda_alexa_smart_home}:*",
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:${local.names.lambda_alexa_proxy}",
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:${local.names.lambda_alexa_proxy}:*",
         ]
       },
       {
@@ -88,6 +88,7 @@ resource "aws_iam_policy" "github_actions_deploy" {
           "iam:ListRoleTags",
           "iam:ListRolePolicies",
           "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
           "iam:PutRolePolicy",
           "iam:GetRolePolicy",
           "iam:DeleteRolePolicy",
@@ -95,7 +96,7 @@ resource "aws_iam_policy" "github_actions_deploy" {
           "iam:DetachRolePolicy",
           "iam:PassRole",
         ]
-        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.names.iam_role_alexa_smart_home}"
+        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.names.iam_role_alexa_proxy}"
       },
       {
         # Read on the AWS-managed policy that gets attached to the Lambda's
@@ -123,7 +124,7 @@ resource "aws_iam_policy" "github_actions_deploy" {
           "logs:TagResource",
           "logs:UntagResource",
         ]
-        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.names.lambda_alexa_smart_home}*"
+        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.names.lambda_alexa_proxy}*"
       },
       {
         # logs:DescribeLogGroups is an account-level list action — AWS IAM

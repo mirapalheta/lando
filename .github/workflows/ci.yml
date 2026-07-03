@@ -64,7 +64,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: src/aws/lando-alexa-smart-home
+        working-directory: src/aws/lando-alexa-proxy
 
     steps:
       - name: 📦 Checkout
@@ -75,7 +75,7 @@ jobs:
         with:
           node-version: '26'
           cache: npm
-          cache-dependency-path: src/aws/lando-alexa-smart-home/package-lock.json
+          cache-dependency-path: src/aws/lando-alexa-proxy/package-lock.json
 
       - name: 📥 Install dependencies
         run: npm ci
@@ -92,7 +92,7 @@ jobs:
       - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
-          directory: src/aws/lando-alexa-smart-home/coverage
+          directory: src/aws/lando-alexa-proxy/coverage
           flags: lambda
           fail_ci_if_error: false
         env:

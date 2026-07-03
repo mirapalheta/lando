@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!--
+      Suppress CS1591 (missing XML doc) at the project level. This project is
+      dominated by Alexa Smart Home wire-format DTOs (Models/, Validators/Payload/,
+      Transformers/Payload/) whose docs would just restate the property name. The
+      architecturally significant surfaces in this project (Constants, the directive
+      handlers, the transformer base classes, ServiceCollectionExtensions, etc.)
+      are documented as a matter of convention — but the suppression here lives at
+      the project level because per-file `#pragma warning disable CS1591` does not
+      survive our code formatter.
+    -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Lando.Abstractions/Lando.Abstractions.csproj" />
+    <ProjectReference Include="../Lando.Alexa.Core/Lando.Alexa.Core.csproj" />
+    <ProjectReference Include="../Lando.HomeAssistant.Abstractions/Lando.HomeAssistant.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

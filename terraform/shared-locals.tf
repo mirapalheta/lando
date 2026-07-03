@@ -24,9 +24,9 @@ locals {
     diagnostic_settings        = "diag-${var.project_name}"
 
     # ---- AWS ----
-    lambda_alexa_smart_home   = "lambda-${var.project_name}-alexa-smart-home"
-    iam_role_alexa_smart_home = "role-${var.project_name}-alexa-smart-home"
-    iam_policy_hmac_read      = "policy-${var.project_name}-hmac-secret-read"
+    lambda_alexa_proxy   = "lambda-${var.project_name}-alexa-proxy"
+    iam_role_alexa_proxy = "role-${var.project_name}-alexa-proxy"
+    iam_policy_hmac_read = "policy-${var.project_name}-hmac-secret-read"
     # Secrets Manager uses `/` as a hierarchy separator in the console;
     # keeping that style makes the secret group cleanly under "lando/".
     secretsmanager_hmac = "${var.project_name}/hmac/shared-secret"
@@ -137,16 +137,16 @@ locals {
   #   source_dir → npm package root (cwd for `npm ci && npm run build`; also the
   #                directory whose source files determine the build hash)
   #   zip_path   → final packaged Lambda bundle. Kept MODULE-RELATIVE so the value
-  #                used as aws_lambda_function.alexa_smart_home.filename is identical
+  #                used as aws_lambda_function.alexa_proxy.filename is identical
   #                on every machine (an absolute path would leak the applying
   #                machine's path into state and break cross-machine uploads). The
   #                build step wraps it in abspath() because build_lambda.sh runs with
   #                cwd = source_dir, where a relative target would land in the wrong
   #                place.
   lambdas = {
-    alexa_smart_home = {
-      source_dir = abspath("${path.module}/../src/aws/lando-alexa-smart-home")
-      zip_path   = "${path.module}/.terraform/alexa_smart_home.zip"
+    alexa_proxy = {
+      source_dir = abspath("${path.module}/../src/aws/lando-alexa-proxy")
+      zip_path   = "${path.module}/.terraform/alexa_proxy.zip"
     }
   }
 

@@ -14,7 +14,7 @@ using static Constants.Hmac.Headers;
 
 /// <summary>
 /// Verifies HMAC signatures produced by the AWS Lambda proxy
-/// (<c>signRequest</c> in <c>src/aws/lando-alexa-smart-home/src/hmac.ts</c>).
+/// (<c>signRequest</c> in <c>src/aws/lando-alexa-proxy/src/hmac.ts</c>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -247,7 +247,7 @@ public sealed class HmacSignatureVerifier : IRequestValidator
     /// <summary>
     /// v1 scheme: HMAC-SHA256 over UTF-8(<c>"{timestamp}."</c>) followed by
     /// the raw body bytes. Mirrors <c>signRequest</c> in
-    /// <c>src/aws/lando-alexa-smart-home/src/hmac.ts</c>.
+    /// <c>src/aws/lando-alexa-proxy/src/hmac.ts</c>.
     /// </summary>
     private sealed class V1Scheme : SignatureScheme
     {

@@ -17,7 +17,7 @@ updates:
 
   # npm — AWS Lambda proxy
   - package-ecosystem: npm
-    directory: /src/aws/lando-alexa-smart-home
+    directory: /src/aws/lando-alexa-proxy
     schedule:
       interval: daily
     open-pull-requests-limit: 10

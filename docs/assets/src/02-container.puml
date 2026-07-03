@@ -18,7 +18,7 @@ skinparam rectangle {
   FontColor                   #222222
 }
 
-rectangle "AWS Lambda\nlando-alexa-smart-home" as lambda <<external>>
+rectangle "AWS Lambda\nlando-alexa-proxy" as lambda <<external>>
 rectangle "Alexa Event Gateway" as gw <<external>>
 rectangle "Home Assistant\n(REST + WS)" as ha <<external>>
 rectangle "Azure Key Vault" as kv <<external>>

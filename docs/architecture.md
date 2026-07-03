@@ -41,10 +41,10 @@ fake) without touching the directive handlers.
 | `Lando.HomeAssistant.Core`         | REST + WebSocket implementations of the HA interfaces, plus the keyed HTTP/socket handlers that own proxy and custom-CA TLS validation.               |
 | `Lando.FunctionApp`                | The Azure Functions host: `FunctionBase<TRequest,TResponse>`, the `AlexaSmartHome` and `HealthCheck` triggers, and the Key Vault-backed `TokenStore`. |
 
-The AWS side (`src/aws/lando-alexa-smart-home/`) is intentionally
-single-purpose: receive from Alexa, sign with HMAC, forward to the Azure
-Function. Its surface is small enough that a one-file architecture note in
-its own README is sufficient.
+The AWS side (`src/aws/lando-alexa-proxy/`) is intentionally
+single-purpose: receive from Alexa (Smart Home or Custom Skill), sign with
+HMAC, forward to the Azure Function. Its surface is small enough that a
+one-file architecture note in its own README is sufficient.
 
 ## Inbound request pipeline
 
@@ -227,6 +227,33 @@ scene/script isn't a cover, so they fall through to `turn_on`/`turn_off`), with
 the HA domain taken from the entity id so one handler serves both. This is the
 pattern to follow for any future directive whose response differs from the
 standard `Alexa.Response`.
+
+## Custom Skill — voice intents
+
+A second Alexa skill (Custom, not Smart Home) lets you invoke an HA **script**
+by voice with parameters ("ask lando to run the example routine at 40 percent").
+It's a _parallel_ `IRequestHandler` rather than another directive: the wire
+format is an Alexa `IntentRequest`, not a Smart Home directive, so it gets its
+own function + handler instead of riding the directive chain.
+
+- **Transport reuse:** the same AWS Lambda forwards both — it branches on the
+  payload (`directive` vs `request.type`) and appends the per-skill segment to
+  the single base `AZURE_ENDPOINT` (`/smart-home` vs `/custom-skill`). The
+  `AlexaIntent` function (`/api/alexa/custom-skill`) runs the same `FunctionBase`
+  pipeline (HMAC verify → deserialise → dispatch).
+- **Handler:** `IntentSkillHandler` (`Lando.Alexa.CustomSkill`) is registered via
+  `AddRequestHandler<IntentSkillHandler, IntentRequest, IntentResponse>` — the
+  same seam as `SmartHomeHandler`, so HMAC validation is wired automatically.
+- **Routing is metadata-driven:** `IIntentScriptResolver` scans exposed
+  `script.*` entities for an `alexa_intent` attribute and builds an intent→script
+  map (cached briefly). The handler maps the intent's slots onto the script's
+  fields via the `alexa_slots` attribute and runs it with
+  `HomeAssistantRequest.RunScript(entityId, variables)` (a `script.turn_on` with
+  the values passed as run variables).
+
+The Alexa _interaction model_ (intents/slots/utterances) is static and lives on
+the skill, not in lando — only the script binding is dynamic. Full guide:
+[custom-skill.md](custom-skill.md).
 
 ## Proactive state — ChangeReportService
 

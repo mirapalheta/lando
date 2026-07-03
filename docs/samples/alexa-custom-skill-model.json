@@ -1,0 +1,26 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "lando",
+      "intents": [
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        {
+          "name": "RunRoutine",
+          "slots": [
+            { "name": "level", "type": "AMAZON.NUMBER" },
+            { "name": "duration", "type": "AMAZON.DURATION" }
+          ],
+          "samples": [
+            "run the example routine",
+            "run the example routine at {level} percent",
+            "run the example routine for {duration}"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}

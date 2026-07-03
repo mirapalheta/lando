@@ -62,11 +62,11 @@ Secrets are referenced in the Terraform-generated container app settings as:
 Set in `terraform/terraform.tfvars` (or as Terraform variables); Terraform
 writes them to the Lambda function configuration.
 
-| Variable             | Required            | Description                                                                                                                                  |
-| -------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZURE_ENDPOINT`     | Yes                 | Full URL of the Azure container app's smart-home endpoint, e.g. `https://ca-<project>-<location>.azurecontainerapps.io/api/alexa/smart-home` |
-| `HMAC_SECRET_ARN`    | Yes                 | ARN of the AWS Secrets Manager secret holding the HMAC shared key                                                                            |
-| `FORWARD_TIMEOUT_MS` | No (default `8000`) | Outbound HTTP timeout in milliseconds. Keep below Alexa's 8-second response budget.                                                          |
+| Variable             | Required            | Description                                                                                                                                                                                    |
+| -------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AZURE_ENDPOINT`     | Yes                 | Base URL of the Azure container app's Alexa endpoint, e.g. `https://ca-<project>-<location>.azurecontainerapps.io/api/alexa`. The Lambda appends `/smart-home` or `/custom-skill` per payload. |
+| `HMAC_SECRET_ARN`    | Yes                 | ARN of the AWS Secrets Manager secret holding the HMAC shared key                                                                                                                              |
+| `FORWARD_TIMEOUT_MS` | No (default `8000`) | Outbound HTTP timeout in milliseconds. Keep below Alexa's 8-second response budget.                                                                                                            |
 
 ---
 
@@ -82,7 +82,7 @@ Full list in `terraform/terraform.tfvars.example`. The most commonly adjusted:
 | `home_assistant_token`       | —           | Stored in Key Vault at apply time                                                     |
 | `home_assistant_certificate` | —           | Base64 CA cert, no PEM headers (optional)                                             |
 | `home_assistant_base_url`    | —           | Written to container app settings                                                     |
-| `alexa_smart_home_skill_id`  | —           | Locks the Lambda permission to your specific Alexa skill                              |
+| `alexa_skill_id`             | —           | Locks the Lambda permission to your Alexa skill — one skill, both Smart Home and Custom models |
 | `aws_region`                 | `us-east-1` | AWS region for the Lambda                                                             |
 
 ---

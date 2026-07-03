@@ -19,7 +19,7 @@
         <mxCell id="aws-region" value="AWS Region&#10;(us-east-1 — Alexa Smart Home requirement)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7E6;strokeColor=#FF9900;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="60" y="170" width="320" height="280" as="geometry" />
         </mxCell>
-        <mxCell id="lambda" value="AWS Lambda&#10;lando-alexa-smart-home&#10;(Node 24, TypeScript)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="lambda" value="AWS Lambda&#10;lando-alexa-proxy&#10;(Node 24, TypeScript)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="90" y="220" width="260" height="70" as="geometry" />
         </mxCell>
         <mxCell id="sm" value="AWS Secrets Manager&#10;HMAC shared key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;fontSize=11;" vertex="1" parent="1">

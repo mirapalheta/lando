@@ -14,7 +14,7 @@ dotnet build --no-restore
 dotnet test --settings tests/Test.runsettings --no-build --collect:"XPlat Code Coverage"
 
 (
-        cd src/aws/lando-alexa-smart-home
+        cd src/aws/lando-alexa-proxy
         npm install
         npm run test:coverage
 )
@@ -26,7 +26,7 @@ dotnet reportgenerator \
         -targetdir:coverage \
         -reporttypes:Html \
         -reports:"$reports" \
-        -sourcedirs:"src/aws/lando-alexa-smart-home" \
+        -sourcedirs:"src/aws/lando-alexa-proxy" \
         -assemblyfilters:"-*.Tests"
 
 open coverage/index.html

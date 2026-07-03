@@ -1,6 +1,9 @@
 using System.Linq;
 using Lando.Alexa.SmartHome.Models.Core;
+using Lando.Alexa.SmartHome.Models.Discovery;
+using Lando.Alexa.SmartHome.Models.Interfaces.ColorController;
 using Lando.Alexa.SmartHome.Models.Interfaces.PowerController;
+using Lando.Alexa.SmartHome.Models.Interfaces.RangeController;
 using Lando.Alexa.SmartHome.Models.Interfaces.ThermostatController;
 
 namespace Lando.Alexa.SmartHome.Transformers.Entity.Tests;
@@ -60,6 +63,48 @@ public class StateTransformerTests
     {
         var props = new LightStateTransformer().Transform(TestEntities.Light(colorTempMired: null));
         props.Any(p => p.Namespace == Namespaces.ColorTemperatureController).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Light_with_hs_color_and_brightness_emits_ColorController()
+    {
+        var entity = TestEntities.Light(brightness255: 128, hs_color: ["300", "50"]);
+
+        var props = new LightStateTransformer().Transform(entity);
+
+        var color = props.Single(p => p.Namespace == Namespaces.ColorController);
+        var hsb = (HsbColor)color.Value!;
+        hsb.Hue.ShouldBe(300);
+        hsb.Saturation.ShouldBe(0.5);
+        hsb.Brightness.ShouldBe(128 / 255.0);
+    }
+
+    [Fact]
+    public void Light_with_hs_color_and_no_brightness_defaults_ColorController_brightness_to_full()
+    {
+        var entity = TestEntities.Light(brightness255: null, hs_color: ["120", "80"]);
+
+        var props = new LightStateTransformer().Transform(entity);
+
+        var color = props.Single(p => p.Namespace == Namespaces.ColorController);
+        ((HsbColor)color.Value!).Brightness.ShouldBe(1.0);
+    }
+
+    [Fact]
+    public void Light_without_hs_color_omits_ColorController()
+    {
+        var props = new LightStateTransformer().Transform(TestEntities.Light());
+        props.Any(p => p.Namespace == Namespaces.ColorController).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Light_with_incomplete_hs_color_omits_ColorController()
+    {
+        var entity = TestEntities.Light(hs_color: ["300"]); // only one element
+
+        var props = new LightStateTransformer().Transform(entity);
+
+        props.Any(p => p.Namespace == Namespaces.ColorController).ShouldBeFalse();
     }
 
     // ---------- SwitchStateTransformer ----------
@@ -151,6 +196,58 @@ public class StateTransformerTests
 
         var temp = props.Single(p => p.Namespace == Namespaces.TemperatureSensor);
         ((Temperature)temp.Value!).Value.ShouldBe(0);
+    }
+
+    // ---------- CoverStateTransformer ----------
+
+    [Fact]
+    public void Cover_shade_with_set_position_reports_range_value_from_current_position()
+    {
+        var entity = TestEntities.Cover(deviceClass: "shade", currentPosition: 42);
+        var props = new CoverStateTransformer().Transform(entity).ToArray();
+
+        var range = props.Single(p => p.Namespace == Namespaces.RangeController);
+        range.Instance.ShouldBe(Capability.ShadePositionInstance);
+        range.Name.ShouldBe(RangeControllerProperties.RangeValue);
+        range.Value.ShouldBe(42);
+        props.Any(p => p.Namespace == Namespaces.PowerController).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Cover_shade_with_set_position_but_no_current_position_defaults_to_zero()
+    {
+        var entity = TestEntities.Cover(deviceClass: "shade", currentPosition: null);
+        var props = new CoverStateTransformer().Transform(entity);
+
+        props.Single(p => p.Namespace == Namespaces.RangeController).Value.ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("open", PowerState.On)]
+    [InlineData("opening", PowerState.On)]
+    [InlineData("on", PowerState.On)]
+    [InlineData("closed", PowerState.Off)]
+    [InlineData("closing", PowerState.Off)]
+    public void Cover_binary_device_reports_power_state(string state, string expected)
+    {
+        // "garage" is not shade-like, so this always takes the PowerController
+        // branch regardless of the SetPosition feature bit.
+        var entity = TestEntities.Cover(deviceClass: "garage", state: state);
+        var props = new CoverStateTransformer().Transform(entity).ToArray();
+
+        var power = props.Single(p => p.Namespace == Namespaces.PowerController);
+        power.Value.ShouldBe(expected);
+        props.Any(p => p.Namespace == Namespaces.RangeController).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Cover_shade_without_set_position_feature_falls_back_to_power_state()
+    {
+        var entity = TestEntities.Cover(deviceClass: "shade", supportedFeatures: CoverFeatures.Open | CoverFeatures.Close, state: "open");
+        var props = new CoverStateTransformer().Transform(entity);
+
+        props.Any(p => p.Namespace == Namespaces.RangeController).ShouldBeFalse();
+        props.Any(p => p.Namespace == Namespaces.PowerController).ShouldBeTrue();
     }
 
     private static System.Text.Json.JsonElement JsonWrap(object value)

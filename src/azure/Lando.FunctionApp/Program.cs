@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -52,6 +53,7 @@ var configuration = builder.Configuration;
 
 services.AddHomeAssistant();
 services.AddAlexaSmartHome();
+services.AddAlexaCustomSkill();
 
 services.AddAzureClients(b =>
 {
@@ -87,3 +89,6 @@ services.Configure<JsonSerializerOptions>(o =>
 
 
 await builder.Build().RunAsync().ConfigureAwait(false);
+
+[ExcludeFromCodeCoverage]
+partial class Program { }

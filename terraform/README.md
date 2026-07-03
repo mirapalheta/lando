@@ -45,7 +45,7 @@ Edit `terraform.tfvars` with your values. Required fields:
 | `alexa_smart_home_auth_client_secret`  | Same location                                                |
 | `alexa_smart_home_event_client_id`     | Same location (may be the same client)                       |
 | `alexa_smart_home_event_client_secret` | Same location                                                |
-| `alexa_smart_home_skill_id`            | Alexa Developer Console → your skill → Skill ID              |
+| `alexa_skill_id`                       | Alexa Developer Console → your skill → Skill ID              |
 | `tailscale_auth_key`                   | Tailscale admin console → Settings → Keys (tag: `tag:lando`) |
 | `app_version`                          | Docker image tag to deploy from ACR, e.g. `0.1.0`            |
 
@@ -105,12 +105,12 @@ Vault so the Lambda and container app share the same key automatically.
 
 **AWS**
 
-| Resource               | Name pattern                                    |
-| ---------------------- | ----------------------------------------------- |
-| Lambda function        | `lambda-{project}-alexa-smart-home`             |
-| IAM role               | `role-{project}-alexa-smart-home`               |
-| Secrets Manager secret | `{project}/hmac/shared-secret`                  |
-| CloudWatch log group   | `/aws/lambda/lambda-{project}-alexa-smart-home` |
+| Resource               | Name pattern                              |
+| ---------------------- | ------------------------------------------ |
+| Lambda function        | `lambda-{project}-alexa-proxy`             |
+| IAM role               | `role-{project}-alexa-proxy`               |
+| Secrets Manager secret | `{project}/hmac/shared-secret`             |
+| CloudWatch log group   | `/aws/lambda/lambda-{project}-alexa-proxy` |
 
 ---
 
@@ -142,10 +142,10 @@ in the loop. The previous GitHub Actions workflow is archived under
 
 **AWS Lambda bundle** (`aws-lambda-build.tf` → `scripts/build_lambda.sh`):
 
-1. `local.alexa_smart_home_code_hash` is a base64-sha256 over the `.ts`
+1. `local.alexa_proxy_code_hash` is a base64-sha256 over the `.ts`
    / `package.json` / `package-lock.json` / `tsconfig.json` files. It
    drives both `null_resource.lambda_build`'s trigger and
-   `aws_lambda_function.alexa_smart_home.source_code_hash`, so the
+   `aws_lambda_function.alexa_proxy.source_code_hash`, so the
    Lambda update decision is computable from sources alone — no
    dependency on `dist/` or the zip existing at plan time.
 2. When the hash changes, `scripts/build_lambda.sh` runs `npm ci && npm
@@ -153,7 +153,7 @@ run build` and then zips `dist/` straight into the path passed via
    `$ZIP_PATH` (no separate `archive_file` resource — the trigger is the
    freshness check). The script is unconditional: if it's running,
    sources differ from what produced the last artifacts.
-3. `aws_lambda_function.alexa_smart_home` references the zip path via
+3. `aws_lambda_function.alexa_proxy` references the zip path via
    `filename`. The AWS provider only reads the file when
    `source_code_hash` differs from state, so on a fresh CI runner with
    no `dist/` and no zip, plan + apply still succeed when sources
@@ -166,7 +166,7 @@ run build` and then zips `dist/` straight into the path passed via
 After `terraform apply`:
 
 ```bash
-terraform output -raw alexa_smart_home_function_name
+terraform output -raw alexa_proxy_function_name
 ```
 
 Paste that Lambda function name into the Alexa Developer Console under
@@ -181,8 +181,8 @@ terraform output                                    # all outputs
 terraform output -raw container_app_url             # container app FQDN
 terraform output -raw container_registry_url        # ACR login server
 terraform output -raw key_vault_uri                 # Key Vault URI
-terraform output -raw alexa_smart_home_arn          # Lambda ARN
-terraform output -raw alexa_smart_home_function_name  # Lambda name (for Alexa console)
+terraform output -raw alexa_proxy_arn               # Lambda ARN
+terraform output -raw alexa_proxy_function_name     # Lambda name (for Alexa console)
 ```
 
 ---

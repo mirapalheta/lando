@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using Lando;
 using Lando.Alexa.Security.HMAC;
@@ -12,6 +13,8 @@ using static Lando.Alexa.Constants.HttpClients;
 /// named HTTP clients, and the keyed request-handler / request-validator pair
 /// consumed by <c>FunctionBase&lt;TRequest,TResponse&gt;</c>).
 /// </summary>
+/// <remarks>Composition-root wiring only — excluded from coverage.</remarks>
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)

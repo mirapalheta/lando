@@ -1,8 +1,6 @@
 # Lando — Alexa ↔ Home Assistant Bridge
 
 [![coverage](https://codecov.io/gh/mirapalheta/lando/graph/badge.svg)](https://codecov.io/gh/mirapalheta/lando)
-[![.NET coverage](https://codecov.io/gh/mirapalheta/lando/graph/badge.svg?flag=dotnet)](https://app.codecov.io/gh/mirapalheta/lando?flags%5B0%5D=dotnet)
-[![Lambda coverage](https://codecov.io/gh/mirapalheta/lando/graph/badge.svg?flag=lambda)](https://app.codecov.io/gh/mirapalheta/lando?flags%5B0%5D=lambda)
 
 Control your Home Assistant devices by voice through Amazon Alexa — without
 exposing your home network to the internet, without a cloud subscription, and
@@ -63,12 +61,21 @@ terraform init && terraform apply
 | `media_player`        | PowerController, Speaker                               | "turn on / off", "set volume to 40%"         |
 | `sensor`              | TemperatureSensor (numeric temperature sensors)        | "what's the temperature in the kitchen?"     |
 | `scene`               | SceneController (activate only)                        | "turn on movie night"                        |
-| `script`              | SceneController (activate + deactivate)                | "turn on wake up master bedroom"             |
+| `script`              | SceneController (activate + deactivate)                | "turn on goodnight"                          |
 
 Device types whose HA domain has no registered transformer are silently skipped
 at discovery time — a partial deploy yields a valid (smaller) discovery
 response. See [docs/extending-device-types.md](docs/extending-device-types.md)
 to add support for a new domain.
+
+### Voice intents (Custom Skill)
+
+Beyond the device verbs above, a companion **Custom Skill** lets you invoke an HA
+script by voice _with parameters_ — "Alexa, ask lando to run the example routine
+at 40 percent." It reuses the same Lambda, HMAC transport, and HA client; only
+the lando route (`/api/alexa/custom-skill`) and handler differ. Scripts opt in with an
+`alexa_intent` attribute and an `alexa_slots` map. See
+[docs/custom-skill.md](docs/custom-skill.md).
 
 ---
 

@@ -10,7 +10,7 @@ skinparam ParticipantBackgroundColor #F6F6F6
 skinparam ParticipantBorderColor #888888
 
 participant "Alexa cloud" as alexa
-box "AWS Lambda\nlando-alexa-smart-home" #FFF7E6
+box "AWS Lambda\nlando-alexa-proxy" #FFF7E6
   participant "handler.ts" as h
   participant "signRequest()\n(hmac.ts)" as sign
   participant "getHmacSecret()\n(SecretsManager)" as sm

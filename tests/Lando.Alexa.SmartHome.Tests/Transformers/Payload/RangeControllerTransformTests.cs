@@ -56,6 +56,19 @@ public class RangeControllerTransformTests
         request.Position.ShouldBe(expected);
     }
 
+    [Theory]
+    [InlineData(50, 20.0, 70)]
+    [InlineData(90, 20.0, 100)]
+    [InlineData(5, -20.0, 0)]
+    public void AdjustRangeValue_on_fan_clamps_and_emits_set_percentage(int current, double delta, int expected)
+    {
+        var entity = TestEntities.Fan(percentage: current);
+        var request = new AdjustRangeValuePayloadTransform().Transform(entity, new AdjustRangeValuePayload { RangeValueDelta = delta });
+
+        request.Service.ShouldBe("set_percentage");
+        request.Percentage.ShouldBe(expected);
+    }
+
     [Fact]
     public void AdjustRangeValue_throws_on_unsupported_domain()
     {
