@@ -20,18 +20,18 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1089.0"
+    "@aws-sdk/client-secrets-manager": "^3.1126.0"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.162",
-    "@types/node": "^26.1.1",
-    "@typescript-eslint/eslint-plugin": "^8.64.0",
-    "@typescript-eslint/parser": "^8.64.0",
-    "esbuild": "^0.28.1",
-    "eslint": "^10.7.0",
+    "@types/aws-lambda": "^8.10.163",
+    "@types/node": "^26.4.1",
+    "@typescript-eslint/eslint-plugin": "^8.69.0",
+    "@typescript-eslint/parser": "^8.69.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.5",
+    "prettier": "^3.9.6",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.64.0"
+    "typescript-eslint": "^8.69.0"
   }
 }
