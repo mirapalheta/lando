@@ -12,6 +12,7 @@ resource "azurerm_container_app_environment" "lando" {
   name                       = local.names.container_app_environment
   location                   = azurerm_resource_group.lando.location
   resource_group_name        = azurerm_resource_group.lando.name
+  logs_destination           = "log-analytics"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.lando.id
   tags                       = local.tags
 
