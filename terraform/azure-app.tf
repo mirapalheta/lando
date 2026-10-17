@@ -16,6 +16,13 @@ resource "azurerm_container_app_environment" "lando" {
   log_analytics_workspace_id = azurerm_log_analytics_workspace.lando.id
   tags                       = local.tags
 
+  # Azure now creates every environment with the built-in Consumption
+  # workload profile; declare it so plans don't try to strip it.
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
+
   depends_on = [azurerm_resource_group.lando]
 }
 
@@ -39,6 +46,7 @@ resource "azurerm_container_app" "lando" {
   container_app_environment_id = azurerm_container_app_environment.lando.id
   resource_group_name          = azurerm_resource_group.lando.name
   revision_mode                = "Single"
+  workload_profile_name        = "Consumption"
   max_inactive_revisions       = 100
   # Merge the effective image tag in so the deployed version is visible
   # in the Azure Portal without having to inspect a revision's container
@@ -263,8 +271,8 @@ resource "azurerm_container_app" "lando" {
       }
 
       env {
-        name  = "TS_ACCEPT_ROUTES"
-        value = local.settings.gateway.TS_ACCEPT_ROUTES
+        name  = "TS_EXTRA_ARGS"
+        value = local.settings.gateway.TS_EXTRA_ARGS
       }
 
       env {

@@ -51,7 +51,7 @@ locals {
 
     gateway = {
       TS_ACCEPT_DNS          = "true"
-      TS_ACCEPT_ROUTES       = "true"
+      TS_EXTRA_ARGS          = "--accept-routes"
       TS_AUTH_ONCE           = "true"
       TS_ENABLE_HEALTH_CHECK = "true"
       TS_ENABLE_METRICS      = "true"
