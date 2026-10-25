@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Lando.Alexa.SmartHome.Models.Core;
+using Lando.Alexa.SmartHome.Transformers.Entity;
 using Lando.HomeAssistant;
 using Lando.HomeAssistant.Models;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -58,6 +59,33 @@ public class ChangeReportServiceTests
         var ev = new HomeAssistantStateChangedEvent { EntityId = "light.kitchen", NewState = newEntity, OldState = oldEntity };
 
         var gateway = await RunOnceAsync(ev, transform: _ => [Property("powerState", "ON")]);
+
+        gateway.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Media_player_pause_reports_only_playback_state()
+    {
+        var oldEntity = TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: "playing");
+        var newEntity = TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: "paused");
+        var ev = new HomeAssistantStateChangedEvent { EntityId = "media_player.living_room_tv", NewState = newEntity, OldState = oldEntity };
+
+        var gateway = await RunOnceAsync(ev, transform: new MediaPlayerStateTransformer().Transform);
+
+        var call = gateway.Calls.ShouldHaveSingleItem();
+        var changed = call.Changed.ShouldHaveSingleItem();
+        changed.Namespace.ShouldBe(Namespaces.PlaybackStateReporter);
+        changed.Name.ShouldBe("playbackState");
+    }
+
+    [Fact]
+    public async Task Media_player_unchanged_state_reports_nothing()
+    {
+        var oldEntity = TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: "on");
+        var newEntity = TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: "on");
+        var ev = new HomeAssistantStateChangedEvent { EntityId = "media_player.living_room_tv", NewState = newEntity, OldState = oldEntity };
+
+        var gateway = await RunOnceAsync(ev, transform: new MediaPlayerStateTransformer().Transform);
 
         gateway.Calls.ShouldBeEmpty();
     }

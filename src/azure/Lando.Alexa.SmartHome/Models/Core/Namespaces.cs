@@ -33,6 +33,7 @@ public static class Namespaces
     public const string PowerController = "Alexa.PowerController";
     public const string PowerLevelController = "Alexa.PowerLevelController";
     public const string PlaybackController = "Alexa.PlaybackController";
+    public const string PlaybackStateReporter = "Alexa.PlaybackStateReporter";
     public const string RangeController = "Alexa.RangeController";
     public const string SceneController = "Alexa.SceneController";
     public const string SecurityPanelController = "Alexa.SecurityPanelController";

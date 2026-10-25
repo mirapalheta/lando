@@ -41,6 +41,15 @@ public sealed class HomeAssistantRequest
     public string EntityId { get; }
 
     /// <summary>
+    /// How many times the caller should issue this service call back-to-back.
+    /// Always 1 except for the key-press style services (<see cref="VolumeUp"/> /
+    /// <see cref="VolumeDown"/>) that HA exposes without a step-count field. Not
+    /// serialised — it shapes the dispatch, not the body.
+    /// </summary>
+    [JsonIgnore]
+    public int Repeat { get; private set; } = 1;
+
+    /// <summary>
     /// Relative brightness adjustment in percent, used by <see cref="AdjustBrightness"/>.
     /// </summary>
     [JsonPropertyName("brightness_step_pct")]
@@ -243,6 +252,51 @@ public sealed class HomeAssistantRequest
         {
             VolumeLevel = volume
         };
+
+    /// <summary>
+    /// Builds a <c>media_player.volume_up</c> request repeated <paramref name="steps"/>
+    /// times. HA's volume_up takes no amount, so each repeat is one step of whatever
+    /// size the integration uses (one remote key press on <c>androidtv_remote</c>).
+    /// </summary>
+    public static HomeAssistantRequest VolumeUp(string entityId, int steps = 1)
+        => new(entityId, Constants.Services.VolumeUp) { Repeat = steps };
+
+    /// <summary>
+    /// Builds a <c>media_player.volume_down</c> request repeated <paramref name="steps"/>
+    /// times. See <see cref="VolumeUp"/>.
+    /// </summary>
+    public static HomeAssistantRequest VolumeDown(string entityId, int steps = 1)
+        => new(entityId, Constants.Services.VolumeDown) { Repeat = steps };
+
+    /// <summary>
+    /// Builds a <c>media_player.media_play</c> request.
+    /// </summary>
+    public static HomeAssistantRequest MediaPlay(string entityId)
+        => new(entityId, Constants.Services.MediaPlay);
+
+    /// <summary>
+    /// Builds a <c>media_player.media_pause</c> request.
+    /// </summary>
+    public static HomeAssistantRequest MediaPause(string entityId)
+        => new(entityId, Constants.Services.MediaPause);
+
+    /// <summary>
+    /// Builds a <c>media_player.media_stop</c> request.
+    /// </summary>
+    public static HomeAssistantRequest MediaStop(string entityId)
+        => new(entityId, Constants.Services.MediaStop);
+
+    /// <summary>
+    /// Builds a <c>media_player.media_next_track</c> request.
+    /// </summary>
+    public static HomeAssistantRequest MediaNextTrack(string entityId)
+        => new(entityId, Constants.Services.MediaNextTrack);
+
+    /// <summary>
+    /// Builds a <c>media_player.media_previous_track</c> request.
+    /// </summary>
+    public static HomeAssistantRequest MediaPreviousTrack(string entityId)
+        => new(entityId, Constants.Services.MediaPreviousTrack);
 
     /// <summary>
     /// Builds a <c>fan.set_percentage</c> request.

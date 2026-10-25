@@ -57,6 +57,13 @@ public static class Constants
         public const string SetCoverPosition = "set_cover_position";
         public const string OpenCover = "open_cover";
         public const string CloseCover = "close_cover";
+        public const string VolumeUp = "volume_up";
+        public const string VolumeDown = "volume_down";
+        public const string MediaPlay = "media_play";
+        public const string MediaPause = "media_pause";
+        public const string MediaStop = "media_stop";
+        public const string MediaNextTrack = "media_next_track";
+        public const string MediaPreviousTrack = "media_previous_track";
     }
 
     /// <summary>
@@ -512,6 +519,11 @@ public static class Constants
     /// HA <c>media_player.supported_features</c> bit positions
     /// (<see href="https://developers.home-assistant.io/docs/core/entity/media-player/" />).
     /// </summary>
+    /// <remarks>
+    /// Bit 6 (64) is unused in HA's <c>MediaPlayerEntityFeature</c>, so everything from
+    /// <see cref="TurnOn"/> up sits one position higher than a contiguous enumeration
+    /// would suggest (TURN_ON = 128, VOLUME_STEP = 1024, PLAY = 16384).
+    /// </remarks>
     public static class MediaPlayerFeatures
     {
         /// <summary>
@@ -541,55 +553,55 @@ public static class Constants
         /// <summary>
         /// Media player supports an explicit turn-on service call.
         /// </summary>
-        public const int TurnOn = 1 << 6;
+        public const int TurnOn = 1 << 7;
         /// <summary>
         /// Media player supports an explicit turn-off service call.
         /// </summary>
-        public const int TurnOff = 1 << 7;
+        public const int TurnOff = 1 << 8;
         /// <summary>
         /// Media player supports playing arbitrary media.
         /// </summary>
-        public const int PlayMedia = 1 << 8;
+        public const int PlayMedia = 1 << 9;
         /// <summary>
         /// Media player supports step-wise volume adjustment.
         /// </summary>
-        public const int VolumeStep = 1 << 9;
+        public const int VolumeStep = 1 << 10;
         /// <summary>
         /// Media player supports selecting an input source.
         /// </summary>
-        public const int SelectSource = 1 << 10;
+        public const int SelectSource = 1 << 11;
         /// <summary>
         /// Media player supports stop.
         /// </summary>
-        public const int Stop = 1 << 11;
+        public const int Stop = 1 << 12;
         /// <summary>
         /// Media player supports clearing its playlist.
         /// </summary>
-        public const int ClearPlaylist = 1 << 12;
+        public const int ClearPlaylist = 1 << 13;
         /// <summary>
         /// Media player supports starting playback.
         /// </summary>
-        public const int Play = 1 << 13;
+        public const int Play = 1 << 14;
         /// <summary>
         /// Media player supports toggling shuffle mode.
         /// </summary>
-        public const int ShuffleSet = 1 << 14;
+        public const int ShuffleSet = 1 << 15;
         /// <summary>
         /// Media player supports selecting a sound mode.
         /// </summary>
-        public const int SelectSoundMode = 1 << 15;
+        public const int SelectSoundMode = 1 << 16;
         /// <summary>
         /// Media player supports media browsing.
         /// </summary>
-        public const int BrowseMedia = 1 << 16;
+        public const int BrowseMedia = 1 << 17;
         /// <summary>
         /// Media player supports configuring repeat mode.
         /// </summary>
-        public const int RepeatSet = 1 << 17;
+        public const int RepeatSet = 1 << 18;
         /// <summary>
         /// Media player supports multi-room grouping.
         /// </summary>
-        public const int Grouping = 1 << 18;
+        public const int Grouping = 1 << 19;
     }
 
     /// <summary>

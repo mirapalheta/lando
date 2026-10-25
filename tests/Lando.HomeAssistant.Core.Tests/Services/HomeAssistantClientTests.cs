@@ -62,6 +62,42 @@ public class HomeAssistantClientTests
         caller.Verify(c => c.CallServiceAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Step-style requests (<see cref="HomeAssistantRequest.Repeat"/> &gt; 1) are
+    /// issued that many times; HA's volume_up/down take no amount.
+    /// </summary>
+    [Fact]
+    public async Task CallServiceAsync_issues_the_call_Repeat_times()
+    {
+        var caller = new Mock<IServiceCaller>();
+        caller.Setup(c => c.CallServiceAsync(It.IsAny<HomeAssistantRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var sut = new HomeAssistantClient(new Mock<IDeviceDiscovery>().Object, caller.Object);
+        var request = HomeAssistantRequest.VolumeUp("media_player.living_room_tv", 3);
+
+        await sut.CallServiceAsync(request, CancellationToken.None);
+
+        caller.Verify(c => c.CallServiceAsync(request, It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    /// <summary>
+    /// A failing repeat stops the remaining ones — the exception surfaces after
+    /// the first call rather than hammering an unreachable player.
+    /// </summary>
+    [Fact]
+    public async Task CallServiceAsync_stops_repeating_on_failure()
+    {
+        var caller = new Mock<IServiceCaller>();
+        caller.Setup(c => c.CallServiceAsync(It.IsAny<HomeAssistantRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new System.InvalidOperationException("boom"));
+        var sut = new HomeAssistantClient(new Mock<IDeviceDiscovery>().Object, caller.Object);
+        var request = HomeAssistantRequest.VolumeDown("media_player.living_room_tv", 5);
+
+        await Should.ThrowAsync<System.InvalidOperationException>(() => sut.CallServiceAsync(request, CancellationToken.None));
+
+        caller.Verify(c => c.CallServiceAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static async IAsyncEnumerable<HomeAssistantEntity> ToAsync(
         IEnumerable<HomeAssistantEntity> entities,
         [EnumeratorCancellation] CancellationToken ct = default)

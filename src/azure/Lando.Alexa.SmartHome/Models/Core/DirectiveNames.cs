@@ -49,6 +49,12 @@ public static class DirectiveNames
     public const string AdjustVolume = "AdjustVolume";
     public const string SetMute = "SetMute";
 
+    // StepSpeaker shares AdjustVolume / SetMute with Speaker but carries a different
+    // payload, so its handlers are keyed by the namespace-qualified name (see
+    // Qualify). These are DI keys, not wire names.
+    public const string StepSpeakerAdjustVolume = Namespaces.StepSpeaker + "." + AdjustVolume;
+    public const string StepSpeakerSetMute = Namespaces.StepSpeaker + "." + SetMute;
+
     // ChannelController
     public const string ChangeChannel = "ChangeChannel";
     public const string SkipChannels = "SkipChannels";
@@ -100,4 +106,14 @@ public static class DirectiveNames
     // TimeHoldController
     public const string Hold = "Hold";
     public const string Resume = "Resume";
+
+    /// <summary>
+    /// Builds the namespace-qualified handler key (<c>Alexa.StepSpeaker.AdjustVolume</c>)
+    /// the dispatcher tries before the bare directive name. Only directives whose
+    /// name collides across interfaces with different payloads register under it.
+    /// </summary>
+    /// <param name="namespace">The directive header namespace.</param>
+    /// <param name="name">The directive header name.</param>
+    /// <returns>The qualified key.</returns>
+    public static string Qualify(string @namespace, string name) => $"{@namespace}.{name}";
 }

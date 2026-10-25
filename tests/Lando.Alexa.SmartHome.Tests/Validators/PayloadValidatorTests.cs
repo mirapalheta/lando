@@ -5,6 +5,7 @@ using Lando.Alexa.SmartHome.Models.Interfaces.ColorTemperatureController;
 using Lando.Alexa.SmartHome.Models.Interfaces.PercentageController;
 using Lando.Alexa.SmartHome.Models.Interfaces.RangeController;
 using Lando.Alexa.SmartHome.Models.Interfaces.Speaker;
+using Lando.Alexa.SmartHome.Models.Interfaces.StepSpeaker;
 using Lando.Alexa.SmartHome.Models.Interfaces.ThermostatController;
 using Lando.Alexa.SmartHome.Validators.Payload;
 
@@ -135,6 +136,25 @@ public class PayloadValidatorTests
     [InlineData(false)]
     public void SetMute_accepts_any_bool(bool value)
         => new SetMutePayloadValidator().Validate(new SetMutePayload { Mute = value }).IsValid.ShouldBeTrue();
+
+    // ---------- StepSpeaker ----------
+
+    [Theory]
+    [InlineData(-100, true)]
+    [InlineData(-1, true)]
+    [InlineData(1, true)]
+    [InlineData(100, true)]
+    [InlineData(0, false)]
+    [InlineData(-101, false)]
+    [InlineData(101, false)]
+    public void StepSpeakerAdjustVolume_requires_nonzero_steps_in_band(int value, bool valid)
+        => new StepSpeakerAdjustVolumePayloadValidator().Validate(new StepSpeakerAdjustVolumePayload { VolumeSteps = value }).IsValid.ShouldBe(valid);
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StepSpeakerSetMute_accepts_any_bool(bool value)
+        => new StepSpeakerSetMutePayloadValidator().Validate(new StepSpeakerSetMutePayload { Mute = value }).IsValid.ShouldBeTrue();
 
     // ---------- ThermostatController ----------
 

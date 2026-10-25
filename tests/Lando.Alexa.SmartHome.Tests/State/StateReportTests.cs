@@ -1,6 +1,8 @@
 using System.Linq;
+using System.Text.Json;
 using Lando.Alexa.SmartHome.Models.Core;
 using Lando.Alexa.SmartHome.Models.Discovery;
+using Lando.Alexa.SmartHome.Models.Interfaces.PlaybackStateReporter;
 using Lando.Alexa.SmartHome.Models.Interfaces.PowerController;
 using Lando.Alexa.SmartHome.Transformers.Entity;
 
@@ -101,6 +103,77 @@ public class StateReportTests
         props.ShouldContain(p => p.Namespace == Namespaces.Speaker
                               && p.Name == "muted"
                               && (bool)p.Value! == false);
+    }
+
+    /// <summary>
+    /// A step-only player (no VOLUME_SET) advertises StepSpeaker, which has no
+    /// properties — so even though HA reports <c>volume_level</c> /
+    /// <c>is_volume_muted</c>, no Speaker property goes on the wire.
+    /// </summary>
+    [Fact]
+    public void Step_only_media_player_reports_no_speaker_properties()
+    {
+        var props = new MediaPlayerStateTransformer().Transform(
+            TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, volumeLevel: 0.4, isVolumeMuted: false));
+
+        props.ShouldAllBe(p => p.Namespace != Namespaces.Speaker);
+        props.ShouldContain(p => p.Namespace == Namespaces.PowerController);
+    }
+
+    /// <summary>
+    /// HA media_player state maps onto <c>playbackState</c>: playing and
+    /// buffering are PLAYING, paused is PAUSED, everything else — including a
+    /// plain <c>on</c> from key-press integrations — is STOPPED.
+    /// </summary>
+    /// <param name="state">The HA state.</param>
+    /// <param name="expected">The expected <c>playbackState.state</c>.</param>
+    [Theory]
+    [InlineData("playing", PlaybackStateValue.Playing)]
+    [InlineData("buffering", PlaybackStateValue.Playing)]
+    [InlineData("paused", PlaybackStateValue.Paused)]
+    [InlineData("idle", PlaybackStateValue.Stopped)]
+    [InlineData("standby", PlaybackStateValue.Stopped)]
+    [InlineData("on", PlaybackStateValue.Stopped)]
+    [InlineData("off", PlaybackStateValue.Stopped)]
+    [InlineData("unavailable", PlaybackStateValue.Stopped)]
+    public void MediaPlayer_reports_playback_state(string state, string expected)
+    {
+        var props = new MediaPlayerStateTransformer().Transform(
+            TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: state));
+
+        var playback = props.Single(p => p.Namespace == Namespaces.PlaybackStateReporter);
+        playback.Name.ShouldBe(PlaybackStateReporterProperties.PlaybackState);
+        playback.Value.ShouldBe(new PlaybackState { State = expected });
+    }
+
+    /// <summary>
+    /// No playback feature bits means discovery advertised no
+    /// PlaybackStateReporter, so no <c>playbackState</c> is reported.
+    /// </summary>
+    [Fact]
+    public void MediaPlayer_without_playback_features_reports_no_playback_state()
+    {
+        var props = new MediaPlayerStateTransformer().Transform(TestEntities.MediaPlayer(state: "playing"));
+
+        props.ShouldAllBe(p => p.Namespace != Namespaces.PlaybackStateReporter);
+    }
+
+    /// <summary>
+    /// Wire shape of the property: the value is an object with a <c>state</c>
+    /// field, not a bare string.
+    /// </summary>
+    [Fact]
+    public void Playback_state_serializes_as_state_object()
+    {
+        var props = new MediaPlayerStateTransformer().Transform(
+            TestEntities.MediaPlayer(supportedFeatures: TestEntities.AndroidTvRemoteFeatures, state: "playing"));
+        var playback = props.Single(p => p.Namespace == Namespaces.PlaybackStateReporter);
+
+        var json = JsonSerializer.SerializeToNode(playback)!.AsObject();
+
+        ((string?)json["namespace"]).ShouldBe("Alexa.PlaybackStateReporter");
+        ((string?)json["name"]).ShouldBe("playbackState");
+        json["value"]!.ToJsonString().ShouldBe("{\"state\":\"PLAYING\"}");
     }
 
     /// <summary>

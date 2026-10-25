@@ -23,6 +23,14 @@ using static Lando.HomeAssistant.Constants;
 internal static class TestEntities
 {
     /// <summary>
+    /// <c>supported_features</c> reported live by the house's two TCL TVs on the
+    /// <c>androidtv_remote</c> integration (HA 2026.10): PAUSE, VOLUME_MUTE,
+    /// PREVIOUS/NEXT_TRACK, TURN_ON/OFF, PLAY_MEDIA, VOLUME_STEP, STOP, PLAY,
+    /// BROWSE_MEDIA — step volume only, no VOLUME_SET, no SELECT_SOURCE.
+    /// </summary>
+    public const int AndroidTvRemoteFeatures = 153529;
+
+    /// <summary>
     /// Builds a <see cref="HomeAssistantEntity"/> for the <c>light</c> domain with the
     /// supplied state and attributes; defaults to an on/off-only bulb.
     /// </summary>

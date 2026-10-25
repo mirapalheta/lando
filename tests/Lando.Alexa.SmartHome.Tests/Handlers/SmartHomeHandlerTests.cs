@@ -48,6 +48,43 @@ public class SmartHomeHandlerTests
     }
 
     /// <summary>
+    /// A handler registered under the namespace-qualified key wins over one under
+    /// the bare name — StepSpeaker.AdjustVolume must not reach the Speaker handler
+    /// that shares its name but not its payload.
+    /// </summary>
+    [Fact]
+    public async Task Prefers_namespace_qualified_handler_over_bare_name()
+    {
+        var speaker = HandlerReturning(DirectiveNames.AdjustVolume);
+        var stepSpeaker = HandlerReturning(DirectiveNames.StepSpeakerAdjustVolume);
+        var sut = BuildSut([speaker.Object, stepSpeaker.Object]);
+
+        await sut.HandleAsync(RequestFixtures.Directive(Namespaces.StepSpeaker, DirectiveNames.AdjustVolume,
+            endpoint: RequestFixtures.Endpoint()), CancellationToken.None);
+
+        stepSpeaker.Verify(h => h.HandleAsync(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        speaker.Verify(h => h.HandleAsync(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Without a qualified registration the bare name still resolves — every
+    /// existing directive keeps routing as before.
+    /// </summary>
+    [Fact]
+    public async Task Falls_back_to_bare_name_when_no_qualified_handler()
+    {
+        var speaker = HandlerReturning(DirectiveNames.AdjustVolume);
+        var stepSpeaker = HandlerReturning(DirectiveNames.StepSpeakerAdjustVolume);
+        var sut = BuildSut([speaker.Object, stepSpeaker.Object]);
+
+        await sut.HandleAsync(RequestFixtures.Directive(Namespaces.Speaker, DirectiveNames.AdjustVolume,
+            endpoint: RequestFixtures.Endpoint()), CancellationToken.None);
+
+        speaker.Verify(h => h.HandleAsync(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Once);
+        stepSpeaker.Verify(h => h.HandleAsync(It.IsAny<Request>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
     /// Asserts the inbound <see cref="CancellationToken"/> is forwarded to the
     /// inner handler — losing it would silently break the function host's
     /// ability to abort overlong directive work.
@@ -184,10 +221,13 @@ public class SmartHomeHandlerTests
     /// validator unless one is supplied.
     /// </summary>
     private static SmartHomeHandler BuildSut(IDirectiveHandler? inner = null, IValidator<Request>? validator = null)
+        => BuildSut(inner is null ? [] : [inner], validator);
+
+    private static SmartHomeHandler BuildSut(IDirectiveHandler[] handlers, IValidator<Request>? validator = null)
     {
         var services = new ServiceCollection();
-        if (inner is not null)
-            services.AddKeyedSingleton(inner.DirectiveName, inner);
+        foreach (var handler in handlers)
+            services.AddKeyedSingleton(handler.DirectiveName, handler);
 
         if (validator is null)
         {
@@ -199,6 +239,15 @@ public class SmartHomeHandlerTests
 
         return new SmartHomeHandler(services.BuildServiceProvider(), validator, JsonOptions,
             NullLogger<SmartHomeHandler>.Instance);
+    }
+
+    private static Mock<IDirectiveHandler> HandlerReturning(string key)
+    {
+        var handler = new Mock<IDirectiveHandler>();
+        handler.SetupGet(h => h.DirectiveName).Returns(key);
+        handler.Setup(h => h.HandleAsync(It.IsAny<Request>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(SuccessResponse());
+        return handler;
     }
 
     private static Response SuccessResponse() => new()

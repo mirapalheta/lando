@@ -28,6 +28,14 @@ public class HomeAssistantClient(IDeviceDiscovery deviceDiscovery, IServiceCalle
         => deviceDiscovery.GetAsync(entityId, cancellationToken);
 
     /// <inheritdoc />
-    public Task CallServiceAsync(HomeAssistantRequest data, CancellationToken cancellationToken)
-        => serviceCaller.CallServiceAsync(data, cancellationToken);
+    /// <remarks>
+    /// Issues the call <see cref="HomeAssistantRequest.Repeat"/> times, sequentially,
+    /// so step-style services (volume_up/down) land in order and a failure stops
+    /// the remaining repeats.
+    /// </remarks>
+    public async Task CallServiceAsync(HomeAssistantRequest data, CancellationToken cancellationToken)
+    {
+        for (var i = 0; i < data.Repeat; i++)
+            await serviceCaller.CallServiceAsync(data, cancellationToken).ConfigureAwait(false);
+    }
 }

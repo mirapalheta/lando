@@ -8,6 +8,7 @@ using Lando.Alexa.SmartHome.Models.Interfaces.EndpointHealth;
 using Lando.Alexa.SmartHome.Models.Interfaces.HumiditySensor;
 using Lando.Alexa.SmartHome.Models.Interfaces.LockController;
 using Lando.Alexa.SmartHome.Models.Interfaces.PercentageController;
+using Lando.Alexa.SmartHome.Models.Interfaces.PlaybackStateReporter;
 using Lando.Alexa.SmartHome.Models.Interfaces.PowerController;
 using Lando.Alexa.SmartHome.Models.Interfaces.RangeController;
 using Lando.Alexa.SmartHome.Models.Interfaces.Speaker;
@@ -74,6 +75,14 @@ public sealed class Capability
     public bool? ProactivelyReported { get; set; }
 
     /// <summary>
+    /// <c>Alexa.PlaybackController</c> only: the directive names (<c>Play</c>,
+    /// <c>Pause</c>, …) the endpoint accepts. Null (and therefore omitted) on every
+    /// other capability.
+    /// </summary>
+    [JsonPropertyName("supportedOperations")]
+    public IReadOnlyList<string>? SupportedOperations { get; set; }
+
+    /// <summary>
     /// Convenience factory for a stateless capability such as <c>Alexa.SceneController</c>
     /// or <c>Alexa.DoorbellEventSource</c> that exposes no <c>properties</c> block.
     /// </summary>
@@ -110,8 +119,9 @@ public sealed class Capability
     //                       their ChangeReports silently dropped by Alexa — they appear to
     //                       send (202 Accepted at the gateway) but never reach the customer's
     //                       endpoint, which manifests as "device isn't responding" in the app.
-    // - NonControllable:    true on read-only sensor properties (TemperatureSensor /
-    //                       HumiditySensor) so Alexa surfaces them as observation-only.
+    // - NonControllable:    true on read-only sensor properties (TemperatureSensor,
+    //                       HumiditySensor and the HumidityRange RangeController) so
+    //                       Alexa surfaces them as observation-only.
 
     public static Capability EndpointHealth { get; } = new()
     {
@@ -379,6 +389,49 @@ public sealed class Capability
         }
     };
 
+    /// <summary>
+    /// <c>Alexa.StepSpeaker</c>, for players that can only nudge volume up/down
+    /// (HA <c>VOLUME_STEP</c> without <c>VOLUME_SET</c>). The interface has no
+    /// reportable properties, so it carries no <c>properties</c> block, and Alexa
+    /// renders no app control for it — it is voice-only by design.
+    /// </summary>
+    public static Capability StepSpeaker { get; } = ForInterface(Namespaces.StepSpeaker);
+
+    /// <summary>
+    /// Builds the <c>Alexa.PlaybackController</c> capability advertising exactly
+    /// <paramref name="supportedOperations"/>. Stateless: playback has no reportable
+    /// properties, so there is no <c>properties</c> block.
+    /// </summary>
+    /// <param name="supportedOperations">The PlaybackController directive names the endpoint accepts.</param>
+    /// <returns>The PlaybackController capability for discovery.</returns>
+    public static Capability PlaybackController(IReadOnlyList<string> supportedOperations) => new()
+    {
+        Interface = Namespaces.PlaybackController,
+        SupportedOperations = supportedOperations
+    };
+
+    /// <summary>
+    /// <c>Alexa.PlaybackStateReporter</c>: reports <c>playbackState</c>
+    /// (PLAYING / PAUSED / STOPPED). Alexa uses the most recent report to decide
+    /// whether transport commands such as "pause" go to this endpoint, so it is
+    /// advertised alongside <see cref="PlaybackController"/>.
+    /// </summary>
+    public static Capability PlaybackStateReporter { get; } = new()
+    {
+        Interface = Namespaces.PlaybackStateReporter,
+        Properties = new CapabilityProperties
+        {
+            Supported = [new(PlaybackStateReporterProperties.PlaybackState)]
+        }
+    };
+
+    /// <summary>
+    /// <c>Alexa.HumiditySensor</c>. Defined for completeness but not advertised by
+    /// <c>SensorDiscoveryTransformer</c>: on an <c>AIR_QUALITY_MONITOR</c> endpoint the
+    /// Alexa app draws a "Humidity --" row for this interface that it never fills, and
+    /// voice does not treat the endpoint as a humidity sensor on its account. The
+    /// <see cref="HumidityRange"/> RangeController carries the reading instead.
+    /// </summary>
     public static Capability HumiditySensor { get; } = new()
     {
         Interface = Namespaces.HumiditySensor,
@@ -386,6 +439,64 @@ public sealed class Capability
         {
             Supported = [new(HumiditySensorProperties.RelativeHumidity)],
             NonControllable = true
+        }
+    };
+
+    /// <summary>
+    /// Instance id used on the <see cref="HumidityRange"/> RangeController capability and
+    /// echoed back on outgoing <c>StateReport</c> properties for the same capability.
+    /// </summary>
+    public const string HumidityInstance = "Sensor.Humidity";
+
+    /// <summary>
+    /// Read-only <c>Alexa.RangeController</c> carrying the relative humidity, the only
+    /// humidity capability advertised on humidity sensors. Amazon's air quality
+    /// monitor template (the <c>AIR_QUALITY_MONITOR</c> display category these sensors
+    /// use) reports humidity through a RangeController instance; with
+    /// <see cref="HumiditySensor"/> alone the Alexa app's Humidity row stays "--" and
+    /// voice doesn't treat the endpoint as a humidity sensor, even though the
+    /// <c>relativeHumidity</c> reports arrive. The app labels this instance with
+    /// Amazon's own localized asset name ("Indoor humidity" in en-US).
+    /// </summary>
+    /// <remarks>
+    /// <c>nonControllable</c>, so Alexa sends no <c>SetRangeValue</c> /
+    /// <c>AdjustRangeValue</c> and no handler is needed. The text friendly name backs up
+    /// the <c>Alexa.AirQuality.Humidity</c> asset in case the catalog doesn't carry it.
+    /// </remarks>
+    public static Capability HumidityRange { get; } = new()
+    {
+        Interface = Namespaces.RangeController,
+        Instance = HumidityInstance,
+        Properties = new CapabilityProperties
+        {
+            Supported = [new(RangeControllerProperties.RangeValue)],
+            NonControllable = true
+        },
+        CapabilityResources = new CapabilityResources
+        {
+            FriendlyNames =
+            [
+                new FriendlyName
+                {
+                    Type = FriendlyNameType.Asset,
+                    Value = new FriendlyNameValue { AssetId = "Alexa.AirQuality.Humidity" }
+                },
+                new FriendlyName
+                {
+                    Type = FriendlyNameType.Text,
+                    Value = new FriendlyNameValue { Text = "Humidity", Locale = "en-US" }
+                }
+            ]
+        },
+        Configuration = new CapabilityConfiguration
+        {
+            SupportedRange = new SupportedRange
+            {
+                MinimumValue = 0,
+                MaximumValue = 100,
+                Precision = 1
+            },
+            UnitOfMeasure = Units.Percent
         }
     };
 

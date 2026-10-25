@@ -92,12 +92,14 @@ public class DiscoveryTransformerTests
     }
 
     [Fact]
-    public void Sensor_humidity_device_class_advertises_humidity_sensor()
+    public void Sensor_humidity_device_class_advertises_humidity_range_controller_only()
     {
         var endpoint = new SensorDiscoveryTransformer().Transform(TestEntities.Sensor(deviceClass: "humidity"));
 
         endpoint.DisplayCategories.ShouldContain(DisplayCategory.AirQualityMonitor);
-        endpoint.Capabilities.ShouldContain(c => c.Interface == Namespaces.HumiditySensor);
+        endpoint.Capabilities.ShouldContain(c => c.Interface == Namespaces.RangeController
+                                              && c.Instance == Capability.HumidityInstance);
+        endpoint.Capabilities.ShouldNotContain(c => c.Interface == Namespaces.HumiditySensor);
     }
 
     // ---------- LightDiscoveryTransformer ----------

@@ -14,7 +14,9 @@ namespace Lando.Alexa.SmartHome.Handlers;
 /// <summary>
 /// Top-level dispatcher for Alexa Smart Home skill requests. Validates the
 /// inbound envelope and routes the directive to the
-/// <see cref="IDirectiveHandler"/> registered under the directive's name.
+/// <see cref="IDirectiveHandler"/> registered under the directive's
+/// namespace-qualified name (<see cref="DirectiveNames.Qualify"/>) if there is
+/// one, otherwise under the bare directive name.
 /// </summary>
 /// <remarks>
 /// This handler keeps an <see cref="IServiceProvider"/> only because the
@@ -38,7 +40,8 @@ public class SmartHomeHandler(IServiceProvider provider, IValidator<Request> val
             var loggedRequest = SecureString.WithRedactionEnabled(() => JsonSerializer.Serialize(request, jsonOptions.Value));
             logger.LogInformation("[{DirectiveName}({MessageId})] Request({EntityId}): {Request}", directive, messageId, entityId, loggedRequest);
 
-            if (provider.GetKeyedService<IDirectiveHandler>(directive) is not IDirectiveHandler handler)
+            var qualified = DirectiveNames.Qualify(request.Directive.Header.Namespace, directive);
+            if ((provider.GetKeyedService<IDirectiveHandler>(qualified) ?? provider.GetKeyedService<IDirectiveHandler>(directive)) is not IDirectiveHandler handler)
                 throw new AlexaSmartHomeException(ErrorType.InvalidDirective, $"No handler found for directive: {directive}");
 
             await validator.ValidateAndThrowAsync(request, cancellationToken).ConfigureAwait(false);

@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Lando.Alexa.SmartHome.Models.Core;
-using Lando.Alexa.SmartHome.Models.Interfaces.HumiditySensor;
+using Lando.Alexa.SmartHome.Models.Discovery;
+using Lando.Alexa.SmartHome.Models.Interfaces.RangeController;
 using Lando.Alexa.SmartHome.Models.Interfaces.TemperatureSensor;
 using Lando.Alexa.SmartHome.Models.Interfaces.ThermostatController;
 using Lando.HomeAssistant.Models;
@@ -13,8 +14,11 @@ using static Lando.HomeAssistant.Constants;
 
 /// <summary>
 /// State transformer for the <c>sensor</c> HA domain. Reports
-/// <c>Alexa.TemperatureSensor.temperature</c> for temperature sensors and
-/// <c>Alexa.HumiditySensor.relativeHumidity</c> for humidity sensors.
+/// <c>Alexa.TemperatureSensor.temperature</c> for temperature sensors and the
+/// <see cref="Capability.HumidityInstance"/> <c>rangeValue</c> (rounded to a whole
+/// percent, matching the discovery precision) for humidity sensors. No
+/// <c>relativeHumidity</c> is reported because <c>Alexa.HumiditySensor</c> is not
+/// advertised (see <see cref="SensorDiscoveryTransformer"/>).
 /// </summary>
 /// <remarks>
 /// The sensor reading lives in <see cref="HomeAssistantEntity.State"/> as a
@@ -36,11 +40,10 @@ public class SensorStateTransformer : StateTransformerBase
             [
                 new()
                 {
-                    Namespace = Namespaces.HumiditySensor,
-                    Name = HumiditySensorProperties.RelativeHumidity,
-                    Value = new {
-                        Value = reading,
-                    },
+                    Namespace = Namespaces.RangeController,
+                    Instance = Capability.HumidityInstance,
+                    Name = RangeControllerProperties.RangeValue,
+                    Value = (int)Math.Round(reading, MidpointRounding.AwayFromZero),
                     TimeOfSample = entity.LastUpdated,
                     UncertaintyInMilliseconds = DefaultUncertaintyMs
                 }

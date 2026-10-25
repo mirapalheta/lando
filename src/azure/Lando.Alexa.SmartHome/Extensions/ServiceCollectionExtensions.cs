@@ -15,6 +15,7 @@ using Lando.Alexa.SmartHome.Models.Interfaces.ColorTemperatureController;
 using Lando.Alexa.SmartHome.Models.Interfaces.PercentageController;
 using Lando.Alexa.SmartHome.Models.Interfaces.RangeController;
 using Lando.Alexa.SmartHome.Models.Interfaces.Speaker;
+using Lando.Alexa.SmartHome.Models.Interfaces.StepSpeaker;
 using Lando.Alexa.SmartHome.Models.Interfaces.ThermostatController;
 using Lando.Alexa.SmartHome.Services;
 using Lando.Alexa.SmartHome.Transformers.Entity;
@@ -165,6 +166,10 @@ public static class ServiceCollectionExtensions
             services.AddControlDirectiveHandler<EmptyPayload, DecreaseColorTemperaturePayloadTransform>(DirectiveNames.DecreaseColorTemperature);
             services.AddControlDirectiveHandler<EmptyPayload, IncreaseColorTemperaturePayloadTransform>(DirectiveNames.IncreaseColorTemperature);
             services.AddControlDirectiveHandler<EmptyPayload, LockPayloadTransform>(DirectiveNames.Lock);
+            services.AddControlDirectiveHandler<EmptyPayload, NextPayloadTransform>(DirectiveNames.Next);
+            services.AddControlDirectiveHandler<EmptyPayload, PausePayloadTransform>(DirectiveNames.Pause);
+            services.AddControlDirectiveHandler<EmptyPayload, PlayPayloadTransform>(DirectiveNames.Play);
+            services.AddControlDirectiveHandler<EmptyPayload, PreviousPayloadTransform>(DirectiveNames.Previous);
             services.AddControlDirectiveHandler<SetBrightnessPayload, SetBrightnessPayloadTransform>(DirectiveNames.SetBrightness);
             services.AddControlDirectiveHandler<SetColorPayload, SetColorPayloadTransform>(DirectiveNames.SetColor);
             services.AddControlDirectiveHandler<SetColorTemperaturePayload, SetColorTemperaturePayloadTransform>(DirectiveNames.SetColorTemperature);
@@ -174,6 +179,9 @@ public static class ServiceCollectionExtensions
             services.AddControlDirectiveHandler<SetTargetTemperaturePayload, SetTargetTemperaturePayloadTransform>(DirectiveNames.SetTargetTemperature);
             services.AddControlDirectiveHandler<SetThermostatModePayload, SetThermostatModePayloadTransform>(DirectiveNames.SetThermostatMode);
             services.AddControlDirectiveHandler<SetVolumePayload, SetVolumePayloadTransform>(DirectiveNames.SetVolume);
+            services.AddControlDirectiveHandler<StepSpeakerAdjustVolumePayload, StepSpeakerAdjustVolumePayloadTransform>(DirectiveNames.StepSpeakerAdjustVolume);
+            services.AddControlDirectiveHandler<StepSpeakerSetMutePayload, StepSpeakerSetMutePayloadTransform>(DirectiveNames.StepSpeakerSetMute);
+            services.AddControlDirectiveHandler<EmptyPayload, StopPayloadTransform>(DirectiveNames.Stop);
             services.AddControlDirectiveHandler<EmptyPayload, TurnOffPayloadTransform>(DirectiveNames.TurnOff);
             services.AddControlDirectiveHandler<EmptyPayload, TurnOnPayloadTransform>(DirectiveNames.TurnOn);
             services.AddControlDirectiveHandler<EmptyPayload, UnlockPayloadTransform>(DirectiveNames.Unlock);
@@ -234,6 +242,8 @@ public static class ServiceCollectionExtensions
             services.AddTransient<IValidator<SetTargetTemperaturePayload>, SetTargetTemperaturePayloadValidator>();
             services.AddTransient<IValidator<SetThermostatModePayload>, SetThermostatModePayloadValidator>();
             services.AddTransient<IValidator<SetVolumePayload>, SetVolumePayloadValidator>();
+            services.AddTransient<IValidator<StepSpeakerAdjustVolumePayload>, StepSpeakerAdjustVolumePayloadValidator>();
+            services.AddTransient<IValidator<StepSpeakerSetMutePayload>, StepSpeakerSetMutePayloadValidator>();
             return services;
         }
     }
