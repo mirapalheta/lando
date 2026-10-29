@@ -84,6 +84,12 @@ home_assistant_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 # Optional: Reusable pre-auth key for automatic Tailscale device enrollment.
 # Generate at https://login.tailscale.com/admin/settings/keys
 # tailscale_auth_key = "tskey-auth-..."
+#
+# Or, for one ephemeral node per revision (no state share), an OAuth client
+# secret with the Auth Keys write scope and the tags below:
+# tailscale_ephemeral = true
+# tailscale_tags      = ["tag:lando"]
+# tailscale_auth_key  = "tskey-client-...?ephemeral=true&preauthorized=true"
 
 # Optional: Accept DNS configuration pushed from the Tailscale admin console
 # (enables MagicDNS). Default: true

@@ -59,8 +59,10 @@ locals {
 }
 
 # Tailscale gateway sidecar persists device identity across Container App
-# restarts using this file share.
+# restarts using this file share. Not created in ephemeral mode, where each
+# gateway start registers a new node and keeps its state on local disk.
 resource "azurerm_storage_share" "tailscale_state" {
+  count              = var.tailscale_ephemeral ? 0 : 1
   name               = "tailscale-state"
   storage_account_id = local.storage_account.id
   quota              = 1 # 1GB is more than enough for Tailscale state files

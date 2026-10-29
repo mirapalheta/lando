@@ -51,8 +51,8 @@ locals {
 
     gateway = {
       TS_ACCEPT_DNS          = "true"
-      TS_EXTRA_ARGS          = "--accept-routes"
-      TS_AUTH_ONCE           = "true"
+      TS_EXTRA_ARGS          = var.tailscale_ephemeral ? "--accept-routes --advertise-tags=${join(",", var.tailscale_tags)}" : "--accept-routes"
+      TS_AUTH_ONCE           = var.tailscale_ephemeral ? "false" : "true"
       TS_ENABLE_HEALTH_CHECK = "true"
       TS_ENABLE_METRICS      = "true"
       TS_HOSTNAME            = var.hostname == "container_app" ? local.names.container_app : var.hostname == "project_name" ? var.project_name : var.hostname

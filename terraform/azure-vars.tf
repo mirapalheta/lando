@@ -71,7 +71,7 @@ variable "home_assistant_cert_file" {
 # ----------------------------------------
 
 variable "tailscale_auth_key" {
-  description = "Tailscale Auth Key for automatic device authentication (reusable, pre-auth)"
+  description = "Tailscale credential passed to the gateway as TS_AUTHKEY: an auth key (tskey-auth-..., reusable, pre-auth), or, with tailscale_ephemeral = true, an OAuth client secret with the auth-keys write scope and the tailscale_tags, written as tskey-client-...?ephemeral=true&preauthorized=true"
   type        = string
   sensitive   = true
   default     = ""
@@ -87,6 +87,18 @@ variable "tailscale_version" {
   description = "Tailscale version for the gateway sidecar (e.g., 'v1.98.3' or 'latest')"
   type        = string
   default     = "latest"
+}
+
+variable "tailscale_ephemeral" {
+  description = "Register the gateway as a new ephemeral node on every start instead of persisting its identity on an Azure Files share. Each revision then gets its own node, so an old and a new revision never share a node key during a rollover. Requires tailscale_auth_key to be an OAuth client secret (see its description). When true, the tailscale-state share and its environment storage are not created."
+  type        = bool
+  default     = false
+}
+
+variable "tailscale_tags" {
+  description = "ACL tags the gateway advertises when tailscale_ephemeral is true (passed as --advertise-tags). The OAuth client must be allowed to assign them."
+  type        = list(string)
+  default     = ["tag:lando"]
 }
 
 # ----------------------------------------

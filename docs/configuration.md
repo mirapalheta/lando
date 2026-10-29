@@ -74,16 +74,18 @@ writes them to the Lambda function configuration.
 
 Full list in `terraform/terraform.tfvars.example`. The most commonly adjusted:
 
-| Variable                     | Default     | Description                                                                           |
-| ---------------------------- | ----------- | ------------------------------------------------------------------------------------- |
-| `subscription_id`            | —           | Azure subscription ID                                                                 |
-| `project_name`               | `lando`     | Drives all resource names: `rg-{project}-{location}`, `kv-{project}-{location}`, etc. |
-| `location`                   | `eastus`    | Azure region                                                                          |
-| `home_assistant_token`       | —           | Stored in Key Vault at apply time                                                     |
-| `home_assistant_certificate` | —           | Base64 CA cert, no PEM headers (optional)                                             |
-| `home_assistant_base_url`    | —           | Written to container app settings                                                     |
-| `alexa_skill_id`             | —           | Locks the Lambda permission to your Alexa skill — one skill, both Smart Home and Custom models |
-| `aws_region`                 | `us-east-1` | AWS region for the Lambda                                                             |
+| Variable                     | Default         | Description                                                                                                                             |
+| ---------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `subscription_id`            | —               | Azure subscription ID                                                                                                                   |
+| `project_name`               | `lando`         | Drives all resource names: `rg-{project}-{location}`, `kv-{project}-{location}`, etc.                                                   |
+| `location`                   | `eastus`        | Azure region                                                                                                                            |
+| `home_assistant_token`       | —               | Stored in Key Vault at apply time                                                                                                       |
+| `home_assistant_certificate` | —               | Base64 CA cert, no PEM headers (optional)                                                                                               |
+| `home_assistant_base_url`    | —               | Written to container app settings                                                                                                       |
+| `alexa_skill_id`             | —               | Locks the Lambda permission to your Alexa skill — one skill, both Smart Home and Custom models                                          |
+| `tailscale_ephemeral`        | `false`         | One ephemeral Tailscale node per gateway start, from an OAuth client; see [Gateway identity](#gateway-identity-persistent-or-ephemeral) |
+| `tailscale_tags`             | `["tag:lando"]` | Tags advertised in ephemeral mode                                                                                                       |
+| `aws_region`                 | `us-east-1`     | AWS region for the Lambda                                                                                                               |
 
 ---
 
@@ -104,13 +106,66 @@ Replace `<ha-tailscale-ip>` with the Tailscale IP of your Home Assistant host
 (visible in the Tailscale admin console under **Machines**). If your HA instance
 uses a port other than `8123`, adjust accordingly.
 
-Tag the Tailscale auth key with `tag:lando` when you create it so the ACL rule
-applies to the sidecar automatically.
+Tag the Tailscale auth key (or OAuth client, see below) with `tag:lando` when
+you create it so the ACL rule applies to the sidecar automatically.
 
 > **Tip:** Use a subnet router (OPNsense, a Raspberry Pi, or a Tailscale-enabled
 > VM on your LAN) so you don't need to install Tailscale directly on your HA
 > host. The subnet router needs `tag:lando` reachability to the HA host on your
 > local network instead.
+
+### Gateway identity: persistent or ephemeral
+
+By default the sidecar logs in once with `tailscale_auth_key` and keeps its node
+identity on the `tailscale-state` Azure Files share, so restarts and new
+revisions come back as the same machine with the same Tailscale IP.
+
+The catch is the revision rollover. In single-revision mode Container Apps keeps
+the old revision running until the new one is ready, and both mount the same
+share, so for up to a minute two `tailscaled` processes are logged in as one
+node with one key. When the path to your HA host is DERP-relayed, the relay
+delivers replies to whichever copy sent last, and the new revision can have no
+route to Home Assistant until the old one is stopped. Directives and
+ChangeReports in that window fail.
+
+Set `tailscale_ephemeral = true` to give every gateway start its own node:
+
+| Setting              | Persistent (default)                                     | Ephemeral                                                                          |
+| -------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `tailscale_auth_key` | Auth key (`tskey-auth-…`), tagged `tag:lando`            | OAuth client secret, written as `tskey-client-…?ephemeral=true&preauthorized=true` |
+| `TS_AUTH_ONCE`       | `true`                                                   | `false` (log in on every start)                                                    |
+| `TS_EXTRA_ARGS`      | `--accept-routes`                                        | `--accept-routes --advertise-tags=<tailscale_tags>`                                |
+| State                | `tailscale-state` share, mounted at `/var/lib/tailscale` | Container disk; share and environment storage not created                          |
+| Tailscale IP         | Stable                                                   | New on every revision and gateway restart                                          |
+
+For ephemeral mode, create an OAuth client in the Tailscale admin console
+(**Trust credentials → Credential → OAuth**) with the **Auth Keys: Write** scope and
+the tags in `tailscale_tags` (default `["tag:lando"]`; they must already exist in
+your policy's `tagOwners`). Use a tag-based ACL like
+the one above, since the IP is not stable. Nodes created this way are removed by
+Tailscale shortly after they go offline. If you switch an existing deployment,
+delete the old persistent machine in the admin console after the first deploy,
+or new nodes get a `-1` hostname suffix.
+
+Switching an existing deployment to ephemeral mode takes two applies: Azure
+refuses to delete the environment storage while the active revision still
+mounts the share, and Terraform orders that delete before the container app
+update. Apply the app first
+(`terraform apply -target=azurerm_container_app.lando`, or the module path),
+wait for the new revision to take traffic, then apply the rest.
+
+Switching back to persistent mode recreates an empty share, so it needs a fresh
+auth key.
+
+### Startup probe
+
+The app container has a startup probe on `GET /api/health` (every 5 s, up to
+60 failures = 5 minutes). That endpoint checks both the Tailscale proxy and a
+request to Home Assistant through it, so a new revision takes traffic only once
+it can reach HA; until then the previous revision keeps serving. If HA is
+unreachable for the whole 5 minutes, the new revision fails to provision and the
+old one stays active. Use it together with ephemeral mode: with a shared node,
+holding the old revision longer also holds the conflict longer.
 
 ---
 

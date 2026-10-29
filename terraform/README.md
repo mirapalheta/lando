@@ -21,7 +21,8 @@ CloudWatch log group + Alexa trigger permission.
 - Azure CLI authenticated: `az login`
 - AWS CLI authenticated: `aws configure` (or environment credentials)
 - Home Assistant long-lived access token
-- Tailscale auth key tagged `tag:lando`
+- Tailscale auth key tagged `tag:lando`, or an OAuth client secret for
+  ephemeral mode (see [configuration](../docs/configuration.md#gateway-identity-persistent-or-ephemeral))
 - Alexa Smart Home skill IDs from the Alexa Developer Console
 
 ---
@@ -46,7 +47,7 @@ Edit `terraform.tfvars` with your values. Required fields:
 | `alexa_smart_home_event_client_id`     | Same location (may be the same client)                       |
 | `alexa_smart_home_event_client_secret` | Same location                                                |
 | `alexa_skill_id`                       | Alexa Developer Console → your skill → Skill ID              |
-| `tailscale_auth_key`                   | Tailscale admin console → Settings → Keys (tag: `tag:lando`) |
+| `tailscale_auth_key`                   | Tailscale admin console → Settings → Keys (tag: `tag:lando`); ephemeral mode: Settings → OAuth clients, value `tskey-client-…?ephemeral=true&preauthorized=true` |
 | `app_version`                          | Docker image tag to deploy from ACR, e.g. `0.1.0`            |
 
 Optional:
@@ -60,6 +61,8 @@ Optional:
 | `home_assistant_ca_file`     | _(empty)_   | Path to a PEM CA bundle baked into the container's OS trust store at **build time**. Path is relative to `lando/terraform/`. Empty = no CA installed |
 | `home_assistant_cert_file`   | _(empty)_   | Path to a PEM cert with the same build-time semantics as `home_assistant_ca_file`                                                                    |
 | `tailscale_version`          | `latest`    | Tailscale gateway sidecar image tag (e.g. `v1.98.3`). `latest` always resolves to the most recent stable release.                                    |
+| `tailscale_ephemeral`        | `false`     | Register each gateway start as a new ephemeral node (OAuth client secret in `tailscale_auth_key`); no `tailscale-state` share. Avoids two revisions sharing one node during a rollover |
+| `tailscale_tags`             | `["tag:lando"]` | Tags passed as `--advertise-tags` in ephemeral mode; the OAuth client must own them                                                              |
 
 ### 2. Initialise Terraform (first run uses local state)
 

@@ -27,13 +27,14 @@ resource "azurerm_container_app_environment" "lando" {
 }
 
 # Register the storage account with the environment so the Tailscale sidecar
-# can mount the file share defined in azure-storage.tf.
+# can mount the file share defined in azure-storage.tf (persistent mode only).
 resource "azurerm_container_app_environment_storage" "lando" {
+  count                        = var.tailscale_ephemeral ? 0 : 1
   name                         = local.storage_account.name
   account_name                 = local.storage_account.name
   access_key                   = local.storage_account.access_key
   container_app_environment_id = azurerm_container_app_environment.lando.id
-  share_name                   = azurerm_storage_share.tailscale_state.name
+  share_name                   = azurerm_storage_share.tailscale_state[0].name
   access_mode                  = "ReadWrite"
 }
 
@@ -67,11 +68,15 @@ resource "azurerm_container_app" "lando" {
     # ========================================
     # File Share for Tailscale state persistence
     # The gateway container mounts this to preserve its device identity and configuration
-    # across Container App restarts and updates.
-    volume {
-      name         = "tailscale-state"
-      storage_name = local.storage_account.name
-      storage_type = "AzureFile"
+    # across Container App restarts and updates. Skipped in ephemeral mode: two
+    # revisions mounting the same state run as one Tailscale node during a rollover.
+    dynamic "volume" {
+      for_each = var.tailscale_ephemeral ? [] : [1]
+      content {
+        name         = "tailscale-state"
+        storage_name = local.storage_account.name
+        storage_type = "AzureFile"
+      }
     }
 
     # ========================================
@@ -202,6 +207,21 @@ resource "azurerm_container_app" "lando" {
         initial_delay    = 10
         interval_seconds = 10
       }
+
+      # Startup probe - the revision is not ready (and the old one keeps 100% of
+      # traffic) until /api/health reports both the Tailscale proxy and the
+      # Home Assistant route healthy. 60 x 5 s = up to 5 minutes. Startup, not
+      # readiness: a readiness probe would also pull the app out of rotation
+      # during any HA outage, replacing its own error answers with ingress 503s.
+      startup_probe {
+        transport               = "HTTP"
+        path                    = "/api/health"
+        port                    = local.settings.app.WEBSITES_PORT
+        initial_delay           = 5
+        interval_seconds        = 5
+        timeout                 = 5
+        failure_count_threshold = 60
+      }
     }
 
     # ========================================
@@ -294,10 +314,13 @@ resource "azurerm_container_app" "lando" {
         interval_seconds = 30
       }
 
-      # Mount the file share for Tailscale state persistence
-      volume_mounts {
-        name = "tailscale-state"
-        path = "/var/lib/tailscale"
+      # Mount the file share for Tailscale state persistence (persistent mode only)
+      dynamic "volume_mounts" {
+        for_each = var.tailscale_ephemeral ? [] : [1]
+        content {
+          name = "tailscale-state"
+          path = "/var/lib/tailscale"
+        }
       }
     }
 
