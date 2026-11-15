@@ -24,6 +24,9 @@ Alexa Custom Skill  →  AWS Lambda (same one; branches on payload)
                     →  IntentSkillHandler
                     →  IIntentScriptResolver  (intent name → HA script)
                     →  script.turn_on  with the mapped slot values as variables
+                       (or, for a script flagged alexa_response: true,
+                        script.<object_id>?return_response, and Alexa speaks
+                        the script's answer; see "Spoken answers")
 ```
 
 - The Lambda detects a Custom Skill payload (top-level `request.type`) vs a Smart
@@ -66,6 +69,7 @@ script.example_routine:
   alexa_slots: # alexa slot name -> script field name
     level: level
     duration: duration
+  alexa_response: true # optional: wait for the script and speak its answer
 ```
 
 - `alexa_intent` is the **intent name** the script answers (string).
@@ -73,6 +77,9 @@ script.example_routine:
   in the map are ignored; absent slots are simply not passed.
 - The script receives the values as run variables (same as its declared
   `fields`), so `{{ level }}` / `{{ duration }}` resolve inside it.
+- `alexa_response` (optional, a YAML boolean) opts the script into a spoken
+  answer; see below. Anything but `true` (absent, `false`, the string `"true"`)
+  keeps the default.
 
 > **Slot value ids that select a script.** When a custom slot's canonical value
 > is used to pick _which_ entity to act on (e.g. a "routine" slot whose value
@@ -94,6 +101,45 @@ A full sample script lives at
 > types resolve to their canonical value. The handler passes the canonical value
 > (or the raw value when there's no resolution) straight through — do any further
 > parsing in the script with Jinja.
+
+---
+
+## Spoken answers (`alexa_response`)
+
+By default lando starts the script with `script.turn_on`, which returns at once
+and cannot carry a result, and answers "Okay, running Example Routine." whatever
+the script then does. When the answer depends on the outcome (a request the
+script refuses, a lookup), flag the script with `alexa_response: true` and end it
+with a `stop:` that returns a `speech` string:
+
+```yaml
+example_routine:
+  sequence:
+    # ... do the work, decide what to say ...
+    - variables:
+        answer:
+          speech: "Okay, set to {{ level }} percent."
+    - stop: Done
+      response_variable: answer
+```
+
+For a flagged script lando then:
+
+1. calls it as its own service, `POST /api/services/script/<object_id>?return_response`,
+   with the mapped slot values as the flat request body (no `entity_id`), and
+   **waits for the script to finish**;
+2. speaks `service_response.speech` exactly as given when it is a non-blank string;
+3. otherwise (no `speech`, an empty response, a non-string value) falls back to
+   "Okay, running Example Routine.";
+4. stops waiting after **6 seconds** (the Alexa proxy Lambda gives up at 8) and
+   says "That is taking longer than usual. Check Home Assistant." HA keeps
+   running the script; the call is not cancelled on the HA side.
+
+HA errors (unreachable, 4xx, 5xx) still answer "Sorry, something went wrong."
+Other keys in the response are ignored by lando, so the script can return more
+for its own callers. Only flag scripts that finish quickly: the call blocks the
+Alexa request for as long as the script runs. A script with `delay:` or
+`wait_for_trigger:` steps belongs on the default fire-and-forget path.
 
 ---
 
@@ -129,4 +175,5 @@ A full sample script lives at
 - The handler caches the intent→script map briefly (~60s) to avoid hitting HA on
   every utterance, so a newly-flagged script appears within a minute.
 - "ask lando to …" uses the skill's **invocation name** ("lando"); the spoken
-  result is a short confirmation ("Okay, running Example Routine.").
+  result is a short confirmation ("Okay, running Example Routine."), or the
+  script's own `speech` when it is flagged `alexa_response: true`.

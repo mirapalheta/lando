@@ -22,6 +22,13 @@ example_routine:
         entity_id: light.example
       data:
         brightness_pct: "{{ level | int(100) }}"
+    # Optional, with alexa_response: true below: return what Alexa should say.
+    # Without the flag lando never reads this and says "Okay, running Example Routine."
+    - variables:
+        answer:
+          speech: "Okay, example light at {{ level | int(100) }} percent."
+    - stop: Done
+      response_variable: answer
 
 # ---------------------------------------------------------------------------
 # customize.yaml  ->  bind the script to the RunRoutine intent
@@ -33,3 +40,4 @@ example_routine:
 #   alexa_slots:
 #     level: level              # AMAZON.NUMBER   -> field level
 #     duration: duration        # AMAZON.DURATION -> field duration
+#   alexa_response: true        # optional: wait for the script (6 s max) and speak answer.speech

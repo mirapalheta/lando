@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Test projects: the production versions from src/azure plus the
+    test-only packages. Keep production packages in the imported file.
+  -->
+  <Import Project="../src/azure/Directory.Packages.props" />
+
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageVersion Include="Moq" Version="4.21.0" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+  </ItemGroup>
+
+</Project>

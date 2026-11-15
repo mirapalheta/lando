@@ -6,13 +6,17 @@
 # ----------------------------------------------------------------------------
 # Stage 1: Build
 # ----------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 
 ARG COMMIT=
 ARG BRANCH=
 ARG VERSION=
 
 WORKDIR /src
+
+# Central package versions (ManagePackageVersionsCentrally): restore needs
+# them next to the project files.
+COPY Directory.Packages.props                                                   ./
 
 # Copy project files first for dependency-resolution layer caching. Order
 # doesn't matter for restore but stays alphabetical for easy auditing — add
@@ -45,18 +49,21 @@ RUN dotnet publish ./Lando.FunctionApp/Lando.FunctionApp.csproj \
 # ----------------------------------------------------------------------------
 # Stage 2: Runtime (Azure Functions base image)
 # ----------------------------------------------------------------------------
-FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated11.0-azurelinux3
 
 WORKDIR /home/site/wwwroot
 
 # Install Home Assistant certificate(s) into system trust store.
 # Both are optional; the conditional install survives empty values
 # without failing the build.
+# The .NET 11 Functions images are Azure Linux only, so the trust anchors live
+# under /etc/pki and are compiled with update-ca-trust (not the Debian
+# /usr/local/share/ca-certificates + update-ca-certificates pair).
 RUN --mount=type=secret,id=ha_caf \
     --mount=type=secret,id=ha_crt \
-    [ -s /run/secrets/ha_caf ] && cp /run/secrets/ha_caf /usr/local/share/ca-certificates/ha_ca.crt; \
-    [ -s /run/secrets/ha_crt ] && cp /run/secrets/ha_crt /usr/local/share/ca-certificates/ha_cert.crt; \
-    { [ -s /run/secrets/ha_caf ] || [ -s /run/secrets/ha_crt ]; } && update-ca-certificates || true
+    [ -s /run/secrets/ha_caf ] && cp /run/secrets/ha_caf /etc/pki/ca-trust/source/anchors/ha_ca.crt; \
+    [ -s /run/secrets/ha_crt ] && cp /run/secrets/ha_crt /etc/pki/ca-trust/source/anchors/ha_cert.crt; \
+    { [ -s /run/secrets/ha_caf ] || [ -s /run/secrets/ha_crt ]; } && update-ca-trust || true
 
 # Copy published app from build stage
 COPY --from=build /app/publish .

@@ -26,6 +26,7 @@ locals {
     for f in concat(
       tolist(fileset(local.source_path, "**/*.cs")),
       tolist(fileset(local.source_path, "**/*.csproj")),
+      tolist(fileset(local.source_path, "**/Directory.Packages.props")),
       tolist(fileset(local.source_path, "**/Dockerfile")),
       tolist(fileset(local.source_path, "**/.dockerignore")),
     ) : f if length(regexall("(^|/)(bin|obj)/", f)) == 0

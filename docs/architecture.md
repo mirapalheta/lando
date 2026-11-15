@@ -249,7 +249,10 @@ own function + handler instead of riding the directive chain.
   map (cached briefly). The handler maps the intent's slots onto the script's
   fields via the `alexa_slots` attribute and runs it with
   `HomeAssistantRequest.RunScript(entityId, variables)` (a `script.turn_on` with
-  the values passed as run variables).
+  the values passed as run variables). A script flagged `alexa_response: true`
+  is instead called as `script.<object_id>` with `return_response`
+  (`IServiceCaller.RunScriptWithResponseAsync`, 6 s budget) and its returned
+  `speech` is what Alexa says.
 
 The Alexa _interaction model_ (intents/slots/utterances) is static and lives on
 the skill, not in lando — only the script binding is dynamic. Full guide:
@@ -278,6 +281,13 @@ the diff step uses the _Alexa_ endpoint id (`switch#back_bedroom_lights`),
 not the dotted HA entity id — the gateway returns 202 either way, but
 ChangeReports keyed on the dotted form never route to a known endpoint
 and the customer's UI silently stops updating.
+
+`EventGatewayClient` sends each grantee's event up to 3 times, with a 3 s
+timeout per attempt and 1 s between attempts. It retries a timeout, a
+transport error, `429` and `5xx`, and resends the same serialized event, so
+the `messageId` does not change. Any other status is final. The sends run
+inside the WebSocket loop, so a report that fails all 3 attempts holds the
+next event for up to 11 s.
 
 ![ChangeReport sequence](assets/05-seq-change-report.svg)
 

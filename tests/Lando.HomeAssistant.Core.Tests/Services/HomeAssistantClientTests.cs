@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Lando.HomeAssistant.Models;
@@ -96,6 +97,23 @@ public class HomeAssistantClientTests
         await Should.ThrowAsync<System.InvalidOperationException>(() => sut.CallServiceAsync(request, CancellationToken.None));
 
         caller.Verify(c => c.CallServiceAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunScriptWithResponseAsync_delegates_to_ServiceCaller_once()
+    {
+        var answer = JsonDocument.Parse("""{"speech":"Okay, home mode."}""").RootElement.Clone();
+        var variables = new Dictionary<string, object?> { ["mode"] = "home" };
+        var caller = new Mock<IServiceCaller>();
+        caller.Setup(c => c.RunScriptWithResponseAsync("script.lando_set_home_mode", variables, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(answer);
+        var sut = new HomeAssistantClient(new Mock<IDeviceDiscovery>(MockBehavior.Strict).Object, caller.Object);
+
+        var result = await sut.RunScriptWithResponseAsync("script.lando_set_home_mode", variables, CancellationToken.None);
+
+        result!.Value.GetProperty("speech").GetString().ShouldBe("Okay, home mode.");
+        caller.Verify(c => c.RunScriptWithResponseAsync("script.lando_set_home_mode", variables, It.IsAny<CancellationToken>()), Times.Once);
+        caller.Verify(c => c.CallServiceAsync(It.IsAny<HomeAssistantRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static async IAsyncEnumerable<HomeAssistantEntity> ToAsync(

@@ -11,7 +11,8 @@ namespace Lando.Alexa.CustomSkill.Services;
 
 /// <summary>
 /// Builds (and briefly caches) the intent→script map by scanning exposed HA
-/// <c>script.*</c> entities for an <c>alexa_intent</c> attribute. The cache
+/// <c>script.*</c> entities for an <c>alexa_intent</c> attribute (plus the
+/// optional <c>alexa_slots</c> map and <c>alexa_response</c> flag). The cache
 /// avoids hitting HA on every utterance; the TTL is short so a newly-flagged
 /// script is picked up without a restart.
 /// </summary>
@@ -44,12 +45,22 @@ internal sealed class IntentScriptResolver(IHomeAssistantClient client, IMemoryC
 
             // Last write wins if two scripts claim the same intent; that's a
             // misconfiguration, but deterministic enough not to need a throw.
-            map[intent] = new IntentScript(entity.EntityId, entity.GetFriendlyName(), ReadSlotMap(entity));
+            map[intent] = new IntentScript(entity.EntityId, entity.GetFriendlyName(), ReadSlotMap(entity), ReadWantsResponse(entity));
         }
 
         cache.Set(CacheKey, (IReadOnlyDictionary<string, IntentScript>)map, Ttl);
         return map;
     }
+
+    /// <summary>
+    /// True only when <c>alexa_response</c> is a JSON <c>true</c>. A string
+    /// <c>"true"</c>, a number or anything else keeps the fire-and-forget path,
+    /// so a typo can never make an intent block.
+    /// </summary>
+    private static bool ReadWantsResponse(HomeAssistantEntity entity)
+        => entity.Attributes is not null
+           && entity.Attributes.TryGetValue(Constants.CustomAttributes.Response, out var raw)
+           && raw is JsonElement { ValueKind: JsonValueKind.True } or true;
 
     /// <summary>
     /// Reads the <c>alexa_slots</c> object attribute into a string→string map.

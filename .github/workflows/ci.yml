@@ -3,8 +3,9 @@ name: CI
 on:
   push:
     branches: [main]
+  # Every pull request, whatever its base branch: forks and mirrors that
+  # default to another branch get checks on their Dependabot PRs too.
   pull_request:
-    branches: [main]
   workflow_call:
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ jobs:
   # .NET build + test (App)
   # ─────────────────────────────────────────────
   dotnet:
-    name: Function App (.NET 10)
+    name: Function App (.NET 11)
     runs-on: "ubuntu-latest"
     steps:
       - name: 📦 Checkout
@@ -25,7 +26,7 @@ jobs:
       - name: 🔧 Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
 
       - name: 🖋️ Format check
         run: dotnet format --verify-no-changes  --verbosity diagnostic
@@ -56,10 +57,12 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # ─────────────────────────────────────────────
-  # AWS Lambda proxy (TypeScript / Node 26)
+  # AWS Lambda proxy (TypeScript / Node 24)
   # ─────────────────────────────────────────────
   lambda:
-    name: Lambda (Node 26)
+    # Test on the Lambda runtime's Node major (nodejs24.x in terraform), not
+    # the newest Node: the types and tests must not admit APIs it lacks.
+    name: Lambda (Node 24)
     runs-on: ubuntu-latest
 
     defaults:
@@ -73,7 +76,7 @@ jobs:
       - name: 🔧 Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: '26'
+          node-version: '24'
           cache: npm
           cache-dependency-path: src/aws/lando-alexa-proxy/package-lock.json
 

@@ -74,7 +74,8 @@ Beyond the device verbs above, a companion **Custom Skill** lets you invoke an H
 script by voice _with parameters_ — "Alexa, ask lando to run the example routine
 at 40 percent." It reuses the same Lambda, HMAC transport, and HA client; only
 the lando route (`/api/alexa/custom-skill`) and handler differ. Scripts opt in with an
-`alexa_intent` attribute and an `alexa_slots` map. See
+`alexa_intent` attribute and an `alexa_slots` map, and can answer aloud with
+`alexa_response: true` plus a `speech` in their response. See
 [docs/custom-skill.md](docs/custom-skill.md).
 
 ---

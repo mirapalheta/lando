@@ -2,7 +2,6 @@ name: CodeQL
 
 on:
   pull_request:
-    branches: [main]
   schedule:
     # Weekly on Monday at 03:17 UTC
     - cron: '17 3 * * 1'
@@ -13,8 +12,25 @@ permissions:
   security-events: write
 
 jobs:
+  # Code scanning needs GitHub Advanced Security on private repositories;
+  # without it the upload fails. Analyse public copies only. The visibility
+  # is read from the API because scheduled runs carry no repository payload.
+  visibility:
+    name: Repository visibility
+    runs-on: ubuntu-latest
+    outputs:
+      private: ${{ steps.read.outputs.private }}
+    steps:
+      - name: Read visibility
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "private=$(gh api "repos/${GITHUB_REPOSITORY}" --jq .private)" >> "$GITHUB_OUTPUT"
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: visibility
+    if: ${{ needs.visibility.outputs.private == 'false' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -35,7 +51,7 @@ jobs:
         if: matrix.language == 'csharp'
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

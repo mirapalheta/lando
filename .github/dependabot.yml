@@ -12,6 +12,10 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # Majors track the .NET target framework; move them with it, by hand.
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
 
@@ -26,6 +30,10 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # @types/node follows the Lambda runtime's Node major, not the newest.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # Terraform providers
   - package-ecosystem: terraform
@@ -55,5 +63,9 @@ updates:
       - "src/azure/Lando.FunctionApp/"
     schedule:
       interval: "daily"
+    ignore:
+      # The SDK image major follows the .NET target framework.
+      - dependency-name: "dotnet/sdk"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore

@@ -32,7 +32,8 @@ public static class Constants
     /// HA entity attributes that drive intent routing. A script opts in by
     /// setting <see cref="Intent"/> to the Alexa intent name it handles; the
     /// optional <see cref="Slots"/> map translates Alexa slot names to the
-    /// script's field names.
+    /// script's field names, and the optional <see cref="Response"/> flag asks
+    /// lando to wait for the script and speak its answer.
     /// </summary>
     public static class CustomAttributes
     {
@@ -45,5 +46,13 @@ public static class Constants
         /// Map of <c>{ alexa_slot_name: script_field_name }</c>.
         /// </summary>
         public const string Slots = "alexa_slots";
+
+        /// <summary>
+        /// When <c>true</c> (a JSON boolean), lando calls the script as
+        /// <c>script.&lt;object_id&gt;</c> with <c>return_response</c>, waits for it,
+        /// and speaks the response's <c>speech</c> string instead of the generic
+        /// confirmation.
+        /// </summary>
+        public const string Response = "alexa_response";
     }
 }

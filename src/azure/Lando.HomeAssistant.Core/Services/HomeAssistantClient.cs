@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Lando.HomeAssistant.Models;
@@ -38,4 +39,9 @@ public class HomeAssistantClient(IDeviceDiscovery deviceDiscovery, IServiceCalle
         for (var i = 0; i < data.Repeat; i++)
             await serviceCaller.CallServiceAsync(data, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <inheritdoc />
+    /// <remarks>Delegates once; there is no <see cref="HomeAssistantRequest.Repeat"/> here.</remarks>
+    public Task<JsonElement?> RunScriptWithResponseAsync(string entityId, IReadOnlyDictionary<string, object?>? variables, CancellationToken cancellationToken)
+        => serviceCaller.RunScriptWithResponseAsync(entityId, variables, cancellationToken);
 }

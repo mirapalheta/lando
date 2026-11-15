@@ -87,8 +87,24 @@ public static class Constants
 
             /// <summary>
             /// The timeout for calls to the Amazon API. This is a hard timeout — the API should respond quickly, and if it doesn't respond at all we don't want to wait indefinitely.
+            /// <see cref="HttpClient.Timeout"/> applies to each request, not to a retry sequence, so it is only the ceiling above <see cref="AttemptTimeoutSeconds"/>.
             /// </summary>
             public const int TimeoutSeconds = 10;
+
+            /// <summary>
+            /// How many times one event is sent to the Event Gateway before it is given up as lost. Amazon asks for a failed ChangeReport to be resent at least twice.
+            /// </summary>
+            public const int MaxAttempts = 3;
+
+            /// <summary>
+            /// The timeout for one attempt. The gateway normally answers in about 0.1 s and Alexa expects a ChangeReport within 3 s of the change. Must stay below <see cref="TimeoutSeconds"/>, or the client's own timeout fires first.
+            /// </summary>
+            public const int AttemptTimeoutSeconds = 3;
+
+            /// <summary>
+            /// The pause between two attempts. Amazon asks for resends at least 1 s apart.
+            /// </summary>
+            public const int RetryDelaySeconds = 1;
         }
     }
 }

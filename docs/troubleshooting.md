@@ -142,6 +142,23 @@ whenever HA fires a `state_changed` event on a discovered entity.
    in the logs after a HA state change is normal for entities whose Alexa
    properties didn't actually move.
 
+5. **Event Gateway does not answer, or answers `429` / `5xx`** —
+   `EventGatewayClient` retries these: up to 3 attempts per grantee, 3 s
+   per attempt, 1 s apart, the same event each time. `400`, `401`, `403`
+   and `404` are not retried. Each send writes these log lines:
+
+   | Level         | Line                                                                                                  | Meaning                                              |
+   | ------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+   | `Information` | `ChangeReport for '<endpoint>' sent: attempts <n>, status <code>, <ms> ms`                            | Delivered. `attempts` above 1 means a retry saved it |
+   | `Warning`     | `ChangeReport for '<endpoint>' attempt <n> of 3 failed for user <id>: status <status>, <ms> ms`       | One attempt failed. `<ms>` is that attempt alone     |
+   | `Error`       | `ChangeReport for '<endpoint>' lost for user <id>: attempts <n>, status <status>, <ms> ms`            | Gave up. Alexa keeps the old state for that device   |
+
+   `<status>` is the HTTP status code, `timeout` (no answer within 3 s), or
+   `HttpRequestException (<kind>): <message>` for a transport error. A few
+   warnings followed by `sent` lines are harmless. Repeated `lost` lines with
+   `status timeout` mean the gateway is unreachable from the container;
+   with `status 401` or `403`, see item 2.
+
 ---
 
 ## Key Vault access errors on startup

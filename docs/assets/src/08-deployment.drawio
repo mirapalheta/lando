@@ -33,7 +33,7 @@
         <mxCell id="azure-region" value="Azure Region&#10;(any — typically nearest to home)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF5FB;strokeColor=#0078D4;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="440" y="170" width="320" height="430" as="geometry" />
         </mxCell>
-        <mxCell id="aca" value="Azure Container App&#10;Lando.FunctionApp&#10;(.NET 10, Functions on ACA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="aca" value="Azure Container App&#10;Lando.FunctionApp&#10;(.NET 11, Functions on ACA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="470" y="220" width="260" height="70" as="geometry" />
         </mxCell>
         <mxCell id="kv" value="Azure Key Vault&#10;HMAC secret · HA bearer ·&#10;LWA refresh tokens" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=11;" vertex="1" parent="1">

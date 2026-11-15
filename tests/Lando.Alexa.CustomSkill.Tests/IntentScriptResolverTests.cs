@@ -14,7 +14,8 @@ namespace Lando.Alexa.CustomSkill.Services.Tests;
 /// for an <c>alexa_intent</c> attribute and builds (and briefly caches) an
 /// intent-name -> script map. These pin domain filtering, missing/blank intent
 /// handling, slot-map parsing (including malformed shapes), case-insensitive
-/// lookup, last-write-wins on a duplicate intent, and that the map is cached
+/// lookup, last-write-wins on a duplicate intent, the <c>alexa_response</c>
+/// flag (a JSON <c>true</c> only), and that the map is cached
 /// across calls rather than re-listing HA entities every time.
 /// </summary>
 public class IntentScriptResolverTests
@@ -167,6 +168,33 @@ public class IntentScriptResolverTests
         client.Verify(c => c.ListAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Alexa_response_true_sets_WantsResponse()
+    {
+        var entity = ScriptEntity("script.lando_set_home_mode", "SetHomeMode", "Lando - Set Home Mode", response: "true");
+        var sut = Sut([entity]);
+
+        var script = await sut.ResolveAsync("SetHomeMode", CancellationToken.None);
+
+        script!.WantsResponse.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    [InlineData("\"true\"")]
+    [InlineData("1")]
+    [InlineData("null")]
+    public async Task Anything_but_a_JSON_true_leaves_WantsResponse_false(string? response)
+    {
+        var entity = ScriptEntity("script.lando_set_home_mode", "SetHomeMode", "Lando - Set Home Mode", response: response);
+        var sut = Sut([entity]);
+
+        var script = await sut.ResolveAsync("SetHomeMode", CancellationToken.None);
+
+        script!.WantsResponse.ShouldBeFalse();
+    }
+
     private static IntentScriptResolver Sut(IEnumerable<HomeAssistantEntity> entities)
     {
         var client = new Mock<IHomeAssistantClient>();
@@ -174,7 +202,7 @@ public class IntentScriptResolverTests
         return new IntentScriptResolver(client.Object, new MemoryCache(new MemoryCacheOptions()));
     }
 
-    private static HomeAssistantEntity ScriptEntity(string entityId, string intent, string friendlyName, string? slots = null)
+    private static HomeAssistantEntity ScriptEntity(string entityId, string intent, string friendlyName, string? slots = null, string? response = null)
     {
         var attrs = new Dictionary<string, object>
         {
@@ -183,6 +211,8 @@ public class IntentScriptResolverTests
         };
         if (slots is not null)
             attrs["alexa_slots"] = JsonDocument.Parse(slots).RootElement;
+        if (response is not null)
+            attrs["alexa_response"] = JsonDocument.Parse(response).RootElement;
 
         return new HomeAssistantEntity { EntityId = entityId, Attributes = attrs };
     }
