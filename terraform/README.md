@@ -63,6 +63,7 @@ Optional:
 | `tailscale_version`          | `latest`    | Tailscale gateway sidecar image tag (e.g. `v1.98.3`). `latest` always resolves to the most recent stable release.                                    |
 | `tailscale_ephemeral`        | `false`     | Register each gateway start as a new ephemeral node (OAuth client secret in `tailscale_auth_key`); no `tailscale-state` share. Avoids two revisions sharing one node during a rollover |
 | `tailscale_tags`             | `["tag:lando"]` | Tags passed as `--advertise-tags` in ephemeral mode; the OAuth client must own them                                                              |
+| `custom_domain`              | `null`      | Custom hostname with a free managed certificate; optionally writes the DNS records into an Azure DNS zone; `lambda_endpoint = true` points the Lambda at it. See [configuration](../docs/configuration.md#custom-domain) |
 
 ### 2. Initialise Terraform (first run uses local state)
 
@@ -106,6 +107,10 @@ Vault so the Lambda and container app share the same key automatically.
 | Application Insights       | `appi-{project}-{location}` |
 | User-Assigned Identity     | `uai-{project}-{location}`  |
 
+With `custom_domain` set: a hostname and managed certificate on the Container
+App (bound by `scripts/bind_hostname.sh`), and with `azure_dns_zone` also a
+CNAME and an `asuid.` TXT record in that zone.
+
 **AWS**
 
 | Resource               | Name pattern                              |
@@ -114,6 +119,18 @@ Vault so the Lambda and container app share the same key automatically.
 | IAM role               | `role-{project}-alexa-proxy`               |
 | Secrets Manager secret | `{project}/hmac/shared-secret`             |
 | CloudWatch log group   | `/aws/lambda/lambda-{project}-alexa-proxy` |
+
+---
+
+## Tests
+
+```bash
+terraform init -backend=false
+terraform test
+```
+
+`tests/*.tftest.hcl` run `plan` against mock providers: no cloud credentials
+are needed and no provisioner (image build, Lambda build, hostname bind) runs.
 
 ---
 
@@ -182,6 +199,8 @@ Paste that Lambda function name into the Alexa Developer Console under
 ```bash
 terraform output                                    # all outputs
 terraform output -raw container_app_url             # container app FQDN
+terraform output -raw alexa_endpoint                # URL the Lambda forwards to
+terraform output -raw custom_domain_hostname        # custom hostname, if set
 terraform output -raw container_registry_url        # ACR login server
 terraform output -raw key_vault_uri                 # Key Vault URI
 terraform output -raw alexa_proxy_arn               # Lambda ARN

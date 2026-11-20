@@ -116,6 +116,16 @@ output "container_app_url" {
   value       = azurerm_container_app.lando.ingress[0].fqdn
 }
 
+output "custom_domain_hostname" {
+  description = "Custom hostname bound to the Container App, or null when custom_domain is not set"
+  value       = one(terraform_data.custom_domain_bind[*].output.hostname)
+}
+
+output "alexa_endpoint" {
+  description = "The URL the Alexa Lambda forwards to (AZURE_ENDPOINT): the custom hostname once custom_domain.lambda_endpoint is true, the generated name otherwise"
+  value       = "https://${local.alexa_endpoint_host}/api/alexa"
+}
+
 output "container_app_environment_id" {
   description = "The ID of the Container App Environment"
   value       = azurerm_container_app_environment.lando.id

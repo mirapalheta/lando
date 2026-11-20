@@ -155,3 +155,15 @@ locals {
     ManagedBy = "Terraform",
   })
 }
+
+# Host the Alexa Lambda calls. The custom hostname only once
+# custom_domain.lambda_endpoint is true; the generated name otherwise. Reading
+# the bind step's output (not var.custom_domain) makes the Lambda update wait
+# for the hostname to be bound.
+locals {
+  alexa_endpoint_host = (
+    try(var.custom_domain.lambda_endpoint, false)
+    ? one(terraform_data.custom_domain_bind[*].output.hostname)
+    : azurerm_container_app.lando.ingress[0].fqdn
+  )
+}

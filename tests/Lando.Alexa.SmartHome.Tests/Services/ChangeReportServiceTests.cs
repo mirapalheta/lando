@@ -14,8 +14,8 @@ namespace Lando.Alexa.SmartHome.Services.Tests;
 /// <summary>
 /// <see cref="ChangeReportService"/> bridges HA WebSocket <c>state_changed</c>
 /// events to the Alexa Event Gateway. Tests pin: exposure filter, diff
-/// against the prior snapshot, endpoint-id separator translation, and the
-/// no-change short-circuit.
+/// against the prior snapshot, endpoint-id separator translation, the
+/// no-change short-circuit, and the reconnect back-off.
 /// </summary>
 public class ChangeReportServiceTests
 {
@@ -110,6 +110,65 @@ public class ChangeReportServiceTests
         var gateway = await RunOnceAsync(ev, transform: _ => [Property("powerState", "ON")]);
 
         gateway.Calls.ShouldHaveSingleItem().EndpointId.ShouldBe("switch#back_bedroom_lights");
+    }
+
+    [Fact]
+    public async Task Reconnect_backoff_resets_after_a_good_subscription()
+    {
+        // Two failed connects grow the delay to 5 s then 10 s. The third
+        // subscription delivers an event and then HA closes it cleanly: that
+        // drop must wait 5 s again (before the fix it waited 20 s). A fourth
+        // failed connect shows the back-off resumes doubling from there.
+        var idle = TestEntities.Light(entityId: "light.kitchen", exposed: false);
+        var idleEvent = new HomeAssistantStateChangedEvent { EntityId = idle.EntityId, NewState = idle, OldState = null };
+        var subscriptions = new Func<CancellationToken, IAsyncEnumerable<HomeAssistantStateChangedEvent>>[]
+        {
+            ct => FailingAsync(ct),
+            ct => FailingAsync(ct),
+            ct => ToAsync([idleEvent], new TaskCompletionSource(), ct),
+            ct => FailingAsync(ct),
+        };
+        var subscribeCalls = 0;
+        var ws = new Mock<IHomeAssistantWebSocketClient>();
+        ws.Setup(w => w.SubscribeAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(ct => subscriptions[subscribeCalls++](ct));
+
+        var delays = new List<TimeSpan>();
+        var allDropsSeen = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sut = new ChangeReportService(ws.Object, Mock.Of<IEventGatewayClient>(),
+            Mock.Of<IEntityTransform<ContextProperty[]>>(), NullLogger<ChangeReportService>.Instance)
+        {
+            ReconnectDelayAsync = (delay, ct) =>
+            {
+                delays.Add(delay);
+                if (delays.Count < subscriptions.Length)
+                    return Task.CompletedTask;
+                allDropsSeen.TrySetResult();
+                return Task.Delay(Timeout.Infinite, ct);
+            },
+        };
+
+        await sut.StartAsync(CancellationToken.None);
+        await allDropsSeen.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await sut.StopAsync(CancellationToken.None);
+
+        delays.ShouldBe([
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+        ]);
+    }
+
+    private static async IAsyncEnumerable<HomeAssistantStateChangedEvent> FailingAsync(
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await Task.Yield();
+        ct.ThrowIfCancellationRequested();
+        throw new InvalidOperationException("HA unreachable");
+#pragma warning disable CS0162 // An async iterator needs a yield to compile.
+        yield break;
+#pragma warning restore CS0162
     }
 
     private record GatewayCall(string EndpointId, ContextProperty[] Changed, ContextProperty[] All);

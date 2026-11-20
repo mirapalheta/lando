@@ -64,7 +64,7 @@ writes them to the Lambda function configuration.
 
 | Variable             | Required            | Description                                                                                                                                                                                    |
 | -------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AZURE_ENDPOINT`     | Yes                 | Base URL of the Azure container app's Alexa endpoint, e.g. `https://ca-<project>-<location>.azurecontainerapps.io/api/alexa`. The Lambda appends `/smart-home` or `/custom-skill` per payload. |
+| `AZURE_ENDPOINT`     | Yes                 | Base URL of the Azure container app's Alexa endpoint, e.g. `https://ca-<project>-<location>.azurecontainerapps.io/api/alexa`, or `https://<custom hostname>/api/alexa` with `custom_domain.lambda_endpoint = true`. The Lambda appends `/smart-home` or `/custom-skill` per payload. |
 | `HMAC_SECRET_ARN`    | Yes                 | ARN of the AWS Secrets Manager secret holding the HMAC shared key                                                                                                                              |
 | `FORWARD_TIMEOUT_MS` | No (default `8000`) | Outbound HTTP timeout in milliseconds. Keep below Alexa's 8-second response budget.                                                                                                            |
 
@@ -86,6 +86,7 @@ Full list in `terraform/terraform.tfvars.example`. The most commonly adjusted:
 | `tailscale_ephemeral`        | `false`         | One ephemeral Tailscale node per gateway start, from an OAuth client; see [Gateway identity](#gateway-identity-persistent-or-ephemeral) |
 | `tailscale_tags`             | `["tag:lando"]` | Tags advertised in ephemeral mode                                                                                                       |
 | `aws_region`                 | `us-east-1`     | AWS region for the Lambda                                                                                                               |
+| `custom_domain`              | `null`          | Custom hostname for the container app; see [Custom domain](#custom-domain)                                                              |
 
 ---
 
@@ -166,6 +167,61 @@ it can reach HA; until then the previous revision keeps serving. If HA is
 unreachable for the whole 5 minutes, the new revision fails to provision and the
 old one stays active. Use it together with ephemeral mode: with a shared node,
 holding the old revision longer also holds the conflict longer.
+
+---
+
+## Custom domain
+
+By default the Lambda calls the container app's generated name
+(`ca-<project>-<location>.<random>.<region>.azurecontainerapps.io`). That name
+changes if the Container App environment is ever rebuilt. `custom_domain` binds
+a hostname you own instead, with a free managed certificate (issued by DigiCert
+and renewed automatically while the app is public, running, and the CNAME is in
+place).
+
+```hcl
+custom_domain = {
+  hostname        = "lando.example.com"
+  azure_dns_zone  = { name = "example.com", resource_group_name = "rg-dns" } # optional
+  lambda_endpoint = false
+}
+```
+
+What the module does:
+
+| Piece | How |
+| --- | --- |
+| `lando` CNAME → the generated name (TTL 300) | `azurerm_dns_cname_record`, only with `azure_dns_zone` |
+| `asuid.lando` TXT → the domain verification ID | `azurerm_dns_txt_record`, only with `azure_dns_zone` |
+| Hostname + managed certificate + SNI binding | `scripts/bind_hostname.sh` runs `az containerapp hostname add`, then `az containerapp hostname bind --validation-method CNAME`, from a `terraform_data` step (Azure refuses a managed certificate for a hostname not yet on an app: `RequireCustomHostnameInEnvironment`). Issuing the certificate takes about 5 minutes. It skips a hostname already bound, retries while DNS settles, and re-runs when the hostname changes or the app or environment is replaced. On destroy it removes the hostname from the app |
+| Lambda `AZURE_ENDPOINT` | the custom hostname once `lambda_endpoint = true`; the generated name before |
+
+The azurerm resources `azurerm_container_app_custom_domain` and
+`azurerm_container_app_environment_managed_certificate` are not used: neither
+binds the managed certificate to the hostname, so the CLI step would be needed
+anyway. Later deploys keep the binding: the provider re-sends the custom
+domains it reads from Azure on every Container App update.
+
+**Rollout, two applies.**
+
+1. Set `custom_domain` with `lambda_endpoint = false` and apply. Check
+   `az containerapp hostname list -n <app> -g <rg>` shows the hostname with
+   `SniEnabled`, and `curl https://<hostname>/api/health` answers over a valid
+   certificate. The Lambda still calls the generated name.
+2. Set `lambda_endpoint = true` and apply. The Lambda now calls the hostname.
+   The HMAC signature covers the timestamp and body, not the host, so nothing
+   else changes. The generated name keeps answering, which is the rollback.
+
+**DNS outside Azure.** Leave out `azure_dns_zone` and create both records at
+your DNS host before the first apply: a CNAME from the hostname to
+`terraform output -raw container_app_url`, and a TXT at `asuid.<hostname>`
+holding the container app's `customDomainVerificationId`
+(`az containerapp show -n <app> -g <rg> --query properties.customDomainVerificationId -o tsv`).
+
+**Requirements.** The machine running `terraform apply` needs the Azure CLI
+logged in with rights on the app's resource group (and, with `azure_dns_zone`,
+DNS Zone Contributor or more on the zone). A CAA record on the zone, if any,
+must allow `digicert.com`. A zone apex cannot be used (no CNAME at the apex).
 
 ---
 

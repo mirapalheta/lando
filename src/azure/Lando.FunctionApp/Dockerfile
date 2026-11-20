@@ -1,4 +1,4 @@
-# Build context is expected to be src/azure/ (see .github/workflows/deploy-prod.yml).
+# Build context is expected to be src/azure/ (the image is built by terraform/scripts/build_image.sh).
 # All COPY paths below are relative to that — keeping the context Azure-only
 # means the AWS Lambda TypeScript directory isn't shipped to the daemon and
 # doesn't bust the build cache on every Lambda-side change.

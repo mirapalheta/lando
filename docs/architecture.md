@@ -276,7 +276,9 @@ It's an `IHostedService` that subscribes to the Home Assistant WebSocket
    bumps that don't move any Alexa-visible property; sending an empty
    `ChangeReport` would be noisy and the gateway rejects it.
 
-The WebSocket connection reconnects with exponential backoff on drop, and
+The WebSocket connection reconnects with exponential backoff on drop
+(5 s doubling to 5 min, back to 5 s once a subscription delivers its first
+event, so a clean close after a healthy connection costs 5 s), and
 the diff step uses the _Alexa_ endpoint id (`switch#back_bedroom_lights`),
 not the dotted HA entity id — the gateway returns 202 either way, but
 ChangeReports keyed on the dotted form never route to a known endpoint

@@ -228,3 +228,51 @@ variable "storage_account" {
   default   = null
   sensitive = true
 }
+
+# ----------------------------------------
+# Custom domain (optional)
+# ----------------------------------------
+# Binds a hostname you own (e.g. lando.example.com) to the Container App with a
+# free managed certificate, so the Alexa Lambda can call a name that survives an
+# environment rebuild. See docs/configuration.md#custom-domain.
+#
+# Switch in two applies: first with lambda_endpoint = false (records, hostname,
+# certificate; the Lambda still calls the generated name), then, once
+# https://<hostname>/api/health answers, with lambda_endpoint = true.
+
+variable "custom_domain" {
+  description = <<-EOT
+    Custom hostname for the Container App, or null (default) for none.
+      hostname        - the full name to bind, e.g. "lando.example.com". Not a zone apex.
+      azure_dns_zone  - an Azure DNS zone that holds the hostname; the module then writes
+                        the CNAME (to the app's generated name) and the asuid TXT record.
+                        Leave null and create both records yourself before the apply.
+      lambda_endpoint - when true, the Lambda's AZURE_ENDPOINT uses the hostname instead
+                        of the generated name. Set it only after the hostname answers.
+    The bind runs `az containerapp hostname bind`, so the applying machine needs the
+    Azure CLI logged in with rights on the resource group.
+  EOT
+  type = object({
+    hostname = string
+    azure_dns_zone = optional(object({
+      name                = string
+      resource_group_name = string
+    }))
+    lambda_endpoint = optional(bool, false)
+  })
+  default = null
+
+  validation {
+    condition     = var.custom_domain == null || can(regex("^([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$", var.custom_domain.hostname))
+    error_message = "custom_domain.hostname must be a lower-case DNS name such as lando.example.com."
+  }
+
+  validation {
+    condition = (
+      var.custom_domain == null ? true :
+      var.custom_domain.azure_dns_zone == null ? true :
+      endswith(var.custom_domain.hostname, ".${var.custom_domain.azure_dns_zone.name}")
+    )
+    error_message = "custom_domain.hostname must sit below custom_domain.azure_dns_zone.name (a CNAME cannot live at the zone apex)."
+  }
+}

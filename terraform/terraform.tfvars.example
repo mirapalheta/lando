@@ -95,6 +95,19 @@ home_assistant_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 # (enables MagicDNS). Default: true
 # tailscale_accept_dns = true
 
+# Optional: a custom hostname for the Container App, with a free managed
+# certificate, so the Lambda calls a name that survives an environment rebuild.
+# Two applies: first as below (records, hostname, certificate; the Lambda still
+# calls the generated name), then, once https://<hostname>/api/health answers,
+# with lambda_endpoint = true. Omit azure_dns_zone if your DNS is elsewhere and
+# create the two records yourself first (docs/configuration.md#custom-domain).
+# The bind runs `az containerapp hostname bind`: the Azure CLI must be logged in.
+# custom_domain = {
+#   hostname        = "lando.example.com"
+#   azure_dns_zone  = { name = "example.com", resource_group_name = "rg-dns" }
+#   lambda_endpoint = false
+# }
+
 # =========================================================================
 # Alexa Smart Home — OAuth (inbound token validation, Azure-side)
 # =========================================================================

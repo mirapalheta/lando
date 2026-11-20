@@ -24,7 +24,10 @@ using static Lando.Alexa.SmartHome.Constants;
 /// <para>
 /// The service reconnects automatically with exponential back-off when the HA
 /// WebSocket connection drops — expected behaviour when HA restarts or the
-/// Tailscale tunnel hiccups.
+/// Tailscale tunnel hiccups. The back-off starts again from
+/// <see cref="InitialReconnectDelay"/> once a subscription has delivered its
+/// first event, so a drop after a healthy connection waits 5 s, not the delay
+/// left over from earlier failures.
 /// </para>
 /// <para>
 /// Only entities that carry the <c>alexa_expose: true</c> custom attribute are
@@ -40,6 +43,12 @@ internal sealed class ChangeReportService(
     private static readonly TimeSpan InitialReconnectDelay = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan MaxReconnectDelay = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// Waits between reconnect attempts. Settable for tests, which record the
+    /// requested delay instead of sleeping.
+    /// </summary>
+    internal Func<TimeSpan, CancellationToken, Task> ReconnectDelayAsync { get; init; } = Task.Delay;
+
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -50,7 +59,11 @@ internal sealed class ChangeReportService(
         {
             try
             {
-                await RunAsync(stoppingToken).ConfigureAwait(false);
+                // The subscription is only visible here once it yields its first
+                // event (the client connects, authenticates and subscribes before
+                // that). Reaching it proves the connection was good, so the next
+                // drop starts the back-off over.
+                await RunAsync(() => delay = InitialReconnectDelay, stoppingToken).ConfigureAwait(false);
                 // RunAsync returning without throwing means the upstream enumerable
                 // ended cleanly (HA closed the WS politely). Treat it like a transient
                 // failure: wait, back off, reconnect — otherwise we'd hot-loop.
@@ -67,7 +80,7 @@ internal sealed class ChangeReportService(
 
             try
             {
-                await Task.Delay(delay, stoppingToken).ConfigureAwait(false);
+                await ReconnectDelayAsync(delay, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -82,10 +95,17 @@ internal sealed class ChangeReportService(
         logger.LogInformation("ChangeReportService stopped");
     }
 
-    private async Task RunAsync(CancellationToken ct)
+    private async Task RunAsync(Action onSubscribed, CancellationToken ct)
     {
+        var subscribed = false;
         await foreach (var ev in wsClient.SubscribeAsync(ct).ConfigureAwait(false))
         {
+            if (!subscribed)
+            {
+                subscribed = true;
+                onSubscribed();
+            }
+
             // We only forward changes on currently-exposed entities. If the entity used
             // to be exposed and now isn't (or vice versa), we leave that to a future
             // AddOrUpdateReport / DeleteReport publisher — that's a different event.

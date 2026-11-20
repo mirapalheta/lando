@@ -93,7 +93,8 @@ resource "aws_lambda_function" "alexa_proxy" {
   environment {
     variables = {
       # Base Alexa route; the Lambda appends /smart-home or /custom-skill per payload.
-      AZURE_ENDPOINT  = "https://${azurerm_container_app.lando.ingress[0].fqdn}/api/alexa"
+      # Host: the generated name, or custom_domain.hostname once lambda_endpoint is true.
+      AZURE_ENDPOINT  = "https://${local.alexa_endpoint_host}/api/alexa"
       HMAC_SECRET_ARN = aws_secretsmanager_secret.hmac_shared_secret.arn
     }
   }
